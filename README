@@ -6,17 +6,17 @@ The goal of django-datatables is to integrate all the functionality of the [jque
 
 Features:
 
-* User-specified columns
-* Quick column filtering (ie: show only active users)
-* Customizable searching
-* By-column ordering
-* Low-load pagination
-* Per-record actions (ie: show, edit, delete)
-* Cross-table batch actions (all records, all records across pages, or all records on page)
-* Multiple datatables per page
+*  User-specified columns
+*  Quick column filtering (ie: show only active users)
+*  Customizable searching
+*  By-column ordering
+*  Low-load pagination
+*  Per-record actions (ie: show, edit, delete)
+*  Cross-table batch actions (all records, all records across pages, or all records on page)
+*  Multiple datatables per page
 
 The app is broken down into three main parts:
 
-* A custom Queryset backend that contains all transformation features
-* A BaseForm-styled schema that cleanly and concisely configures datatables at the Model level
-* A suite of template tags per functionality that come with overridable default templates and AJAX updates
+*  A custom Queryset backend that contains all transformation features
+*  A BaseForm-styled schema that cleanly and concisely configures datatables at the Model level
+*  A suite of template tags per functionality that come with overridable default templates and AJAX updates
