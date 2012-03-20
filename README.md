@@ -35,12 +35,12 @@ The app is broken down into three main parts.
 After adding 'django\_datatables' to your installed apps, just import and mixin the DatatableMixin into your ListView:
 
     from django_datatables.views import DatatableMixin
-    class MyTableListing(DatatableMixin, ListView)
+    class MyTableListing(DatatableMixin, ListView):
 
 Or, just use the DatatableView:
 
     from django_datatables.views import DatatableView
-    class MyTableListing(DatatableView)
+    class MyTableListing(DatatableView):
 
 Then add some template tags to your view so the default options will render, and link in some css and jquery:
 
