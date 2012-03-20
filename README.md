@@ -20,7 +20,7 @@ The goal of django-datatables is to implement all the functionality of the [jque
 -  Cross-table batch actions (all records, all records across pages, or all records on page)
 -  Multiple datatables per page
 
-## How django-datatables differs from datatables.net: ##
+### How django-datatables differs from datatables.net: ###
 
 -  __There's no need to hook into the ORM yourself.__  
    Django-datatables automatically passes all the AJAX parameters to it's own custom queryset (Dataset) that calls a transformation function before rendering. The transformation method calls other method to apply queryset filters, one method per feature, leveraging all the power of Django's querysets for you. The filters are chained resulting in a single, specific query that hits the database exactly how it needs to, no more and no less.
@@ -33,12 +33,12 @@ The goal of django-datatables is to implement all the functionality of the [jque
 -  __You can control every element of the styling.__  
    Object\_list is still yours to break down and display, and helper template variables make sure your styling applies uniform classing. The template tags that display your interface into each piece of functionality, like the `{% datatable pagination %}` tag that shows your current page and surrounding pages default to simple stock templates. Use these as reference to build your own and pass your improved template into the tag.
    
-## How django-datatables works like datatables.net: ##
+### How django-datatables works like datatables.net: ###
 
 -  All of the same features are available.
 -  Interfacing with the datatable uses AJAX, keeping the entire page from reloading.
    
-## Components: ##
+## Core Components: ##
 
 The app is broken down into three main parts.
 
