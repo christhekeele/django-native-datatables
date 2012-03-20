@@ -1,0 +1,16 @@
+#GENERAL FILES
+*.DS_Store
+*.sqlite3
+*.log
+logs
+
+#DJANGO FILES
+# Automatically created files
+*.pyc
+*.pyo
+*.pot
+#Local to development
+*_settings.py
+#local installs of libs not available through pip
+djinmanage/build
+#/media/user
