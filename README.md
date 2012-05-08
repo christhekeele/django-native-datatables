@@ -1,9 +1,9 @@
 # Django Datatables #
 [![Build Status](https://secure.travis-ci.org/christhekeele/django-datatables.png)](http://travis-ci.org/christhekeele/django-datatables)
 
-## WE ARE STILL DEEP IN DEVELOPMENT ##
+## DEVELOPMENT WILL BE BEGINNING WITHIN THE WEEK ##
 
-### ANY ADVERTISED FEATURES MAY OR MAY NOT MERELY BE ON MY WHITEBOARD AT THE OFFICE ###
+### ANY ADVERTISED FEATURES MAY OR MAY NOT BE FUNCTIONAL ###
 
 ###### If you like what you see, watch this repo for updates. More watchers == more encouragement for me to get this thing out the door. ######
 
