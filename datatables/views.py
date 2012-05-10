@@ -1,6 +1,17 @@
+import math
+
 from django.core.exceptions import ImproperlyConfigured
 from django.views.generic.base import TemplateResponseMixin
 from django.views.generic.list import ListView
+
+from django.core import serializers
+from django.http import HttpResponse
+from django.shortcuts import render_to_response, redirect, get_object_or_404
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.template.response import TemplateResponse
+
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from django_datatables.models import DatatableSet
 
@@ -63,3 +74,27 @@ class DatatableView(DatatableMixin, ListView):
    """
    Generic view that renders a template and passes in a ``DatatableSet`` object.
    """
+
+def datatable(table_name, **kwargs):
+    # find by the table name
+    base_list = Company.objects.all()
+    # "search param"
+    search = kwargs.get('search', "")
+    # { filter_name: selection, filter_name: selection }
+    filters = kwargs.get('filters', {})
+    # "-column_name"
+    ordering = kwargs.get('ordering', "")
+    # { page_by: num, page: num }
+    pagination = kwargs.get('pagination', {page_by: 20, page: 1})
+    # return pagination extrema?
+    full_list = base_list.filter(name__icontains=search).filter(**filters).order_by(ordering)#[pagination['start'] : pagination['end']]
+    paginated_list = Paginator(qs, pagination['page_by'])
+    try
+        object_list = pqs.page(pagination["page"])
+    except PageNotAnInteger:
+        object_list = pqs.page(1)
+    except EmptyPage:
+        object_list = pqs.page(pqs.num_pages)
+    # find by table name
+    template = "whatever.html"
+    return render_to_response(template, {'object_list':object_list})

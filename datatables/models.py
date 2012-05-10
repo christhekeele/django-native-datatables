@@ -2,15 +2,14 @@ from django.db import models
 from django.db.models.query import QuerySet
 
 class DatatableSet(QuerySet):
-    ## kwargs are parsed table meta, holding a dictionary of dictionaries,
-    ## mapping feature names to respective featuresets
-    def __init__(self, query=None, datatable=None):
+    filtering, searching, ordering, pagination = None, None, None, None
+    
+    def __init__(self, query=None, **kwargs):
         super(DatatableSet, self).__init__(None, query)
-        self.selection = datatable.get('selection', None)
-        self.filtering = datatable.get('filtering', None)
-        self.searching = datatable.get('searching', None)
-        self.ordering = datatable.get('ordering', None)
-        self.pagination = datatable.get('pagination', None)
+        self.filtering = kwargs.get('filtering')
+        self.searching = kwargs.get('searching')
+        self.ordering = kwargs.get('ordering')
+        self.pagination = kwargs.get('pagination')
         
     def iterator(self):
         chained_queryset = self.transform()
@@ -28,16 +27,14 @@ class DatatableSet(QuerySet):
             dataset = self.order(dataset)
         if self.pagination or self.pagination is None:
             dataset = self.paginate(dataset)
-        if self.selection or self.selection is None:
-            dataset = self.select(dataset)
         return dataset
     
     def update(self, transformation, option):
         pass
 
-class DatatableManager(models.Manager):
+class Datatable(models.Manager):
     def get_query_set(self):
-        return DatatableSet(self.query)
+        return DatatableSet(self.query, self.filtering, self.searching, self.ordering, self.pagination)
     def __getattr__(self, name):
         return getattr(self.get_query_set(), name)
     def __getattr__(self, attr, *args):
