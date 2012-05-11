@@ -23,7 +23,7 @@ class DatatableSet(QuerySet):
     def transform(self, **kwargs):
         search_param=kwargs.get('search_param',"")
         filter_values=kwargs.get('filter_values',{})
-        ordering=kwargs.get('ordering',"")
+        ordering=kwargs.get('ordering',{})
         # take True values as having params, None values as default, do nothing if False
         if self.searchable or self.searchable is None:
             self.search(search_param)
