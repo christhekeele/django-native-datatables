@@ -1,3 +1,12 @@
+# EXAMPLE DATATABLE
+
+# from datatables.tables import Datatable
+# class CompanyDatatable(datatables.Datatable):
+#     filterable = "active priority"
+#     searchable = "name description email"
+#     orderable = "created_at updated_at acquired_on"
+#     initial = dict(search_param="",filter_values=dict(active=True),ordering=dict(acquired_on="desc"))
+
 from django.db.models import Manager
 from django.db.models.query import QuerySet
 
@@ -10,10 +19,6 @@ class DatatableSet(QuerySet):
         self.searchable = kwargs.get('searchable')
         self.orderable = kwargs.get('orderable')
         self.initial = kwargs.get('initial')
-        
-    # def iterator(self):
-    #     chained_queryset = self.transform()
-    #     return super(DatatableSet, chained_queryset).iterator()
         
     def transform(self, **kwargs):
         search_param=kwargs.get('search_param',"")
@@ -43,8 +48,6 @@ class DatatableSet(QuerySet):
     
     def order(self, ordering):
         order_args = [(("-" if direction=="desc" else "")+order_field) for order_field, direction in ordering.iteritems() if order_field in self.orderable]
-        print order_args
-        print self.query
         if order_args:
             return self.order_by(*order_args)
         else:
@@ -52,23 +55,9 @@ class DatatableSet(QuerySet):
 
 class Datatable(Manager):
     def get_query_set(self):
-        # In the future this will go through all fields and create appropriate objects for filterable, sortable, searchable
-        # In the meantime just provide pre-formatted versions of these on the subclass definition
         return DatatableSet(self.model, filterable=self.filterable, searchable=self.searchable, orderable=self.orderable, initial=self.initial)
     def transform(self, **kwargs):
         return DatatableSet(self.model, filterable=self.filterable, searchable=self.searchable, orderable=self.orderable, initial=self.initial).transform(**kwargs)
-    # def __getattr__(self, name):
-    #     return getattr(self.get_query_set(), name)
-    # def __getattr__(self, attr, *args):
-    #     if attr.startswith("_"): # or at least "__"
-    #         raise AttributeError
-    #     return getattr(self.get_query_set(), attr, *args)
 
 def default_datatable(model):
     pass
-
-# class CompanyDatatable(datatables.Datatable):
-#     filterable = "billing_status_id status_id priority_id"
-#     searchable = "name"
-#     orderable = "phone created_at updated_at"
-#     initial = dict(search_param="",filter_values=dict(active=True),ordering=dict(created_at="desc"))
