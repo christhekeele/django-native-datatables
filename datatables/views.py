@@ -3,7 +3,7 @@ from django.views.generic.list import ListView
 
 import re
 
-from datatables.models import default_datatable
+from datatables.tables import default_datatable
 
 class DatatableMixin(object):
     '''
@@ -17,8 +17,8 @@ class DatatableMixin(object):
         Return a table object to use. The table has automatic support for
         sorting and pagination.
         """
-        if request.GET:
-            return request.GET
+        if self.request.GET:
+            return self.request.GET
         else:
             return self.datatable.initial
 
@@ -35,7 +35,7 @@ class DatatableMixin(object):
                                        u"%(cls)s.model to use the default or pass in your custom datatable through "
                                        u"%(cls)s.datatable"
                                        % {"cls": type(self).__name__})
-        return datatable.transform(get_tranformation_params())
+        return datatable.transform(**self.get_tranformation_params())
 
     def get_context_object_name(self, table):
         """
@@ -44,10 +44,12 @@ class DatatableMixin(object):
         """
         if self.context_datatable_name:
             context_datatable_name = self.context_datatable_name
-        else context_datatable_name = re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', table.__name__).lower().strip('_')
+        else:
+            context_datatable_name = re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', table.model.__name__).lower().strip('_') + "_table"
         return context_datatable_name
        
 class DatatableView(DatatableMixin, ListView):
    """
    Generic view that renders a template and passes in a ``Datatable`` object.
    """
+   pass
