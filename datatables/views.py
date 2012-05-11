@@ -35,7 +35,7 @@ class DatatableMixin(object):
                                        u"%(cls)s.model to use the default or pass in your custom datatable through "
                                        u"%(cls)s.datatable"
                                        % {"cls": type(self).__name__})
-        return datatable.transform(**self.get_tranformation_params())
+        return datatable.all().transform(**self.get_tranformation_params())
 
     def get_context_object_name(self, table):
         """

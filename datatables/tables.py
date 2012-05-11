@@ -26,38 +26,32 @@ class DatatableSet(QuerySet):
         ordering=kwargs.get('ordering',"")
         # take True values as having params, None values as default, do nothing if False
         if self.searchable or self.searchable is None:
-            dataset = self.search(search_param)
+            self.search(search_param)
         if self.filterable or self.filterable is None:
-            dataset = self.filter(filter_values)
+            self.filter(filter_values)
         if self.orderable or self.orderable is None:
-            dataset = self.order(ordering)
-        return dataset
+            self.order(ordering)
+        return self
     
     def search(self, search_param):
         if search_param:
-            return self.filter(**{ search_field+"__icontains":search_param for search_field in self.searchable.split() })
-        else:
-            return self
+            self.filter(**{ search_field+"__icontains":search_param for search_field in self.searchable.split() })
         
     def filter(self, filter_values):
         filter_args = { filter_field:selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filterable }
         if filter_args:
-            return self.filter(**filter_args)
-        else:
-            return self
+            self.filter(**filter_args)
     
     def order(self, ordering):
         order_args = [(("-" if direction=="desc" else "")+order_field) for order_field, direction in ordering.iteritems() if order_field in self.orderable]
         if order_args:
-            return self.order_by(*order_args)
-        else:
-            return self
+            self.order_by(*order_args)
 
 class Datatable(Manager):
+    def __init__(self, *args, **kwargs):
+        super(Datatable, self).__init__()
     def get_query_set(self):
         return DatatableSet(self.model, filterable=self.filterable, searchable=self.searchable, orderable=self.orderable, initial=self.initial)
-    def transform(self, **kwargs):
-        return DatatableSet(self.model, filterable=self.filterable, searchable=self.searchable, orderable=self.orderable, initial=self.initial).transform(**kwargs)
 
 def default_datatable(model):
     pass
