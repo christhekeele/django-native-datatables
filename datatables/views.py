@@ -1,5 +1,5 @@
 from django.core.exceptions import ImproperlyConfigured
-from django.views.generic.list import ListView
+from django.views.generic.list import MultipleObjectMixin, ListView
 
 import re
 
@@ -35,6 +35,8 @@ class DatatableMixin(object):
                                        u"%(cls)s.model to use the default or pass in your custom datatable through "
                                        u"%(cls)s.datatable"
                                        % {"cls": type(self).__name__})
+        # Give datatable id so it can be referenced in html DOM elements
+        datatable.id = self.get_context_object_name(datatable)
         return datatable.all().transform(**self.get_tranformation_params())
 
     def get_context_object_name(self, table):
@@ -47,6 +49,25 @@ class DatatableMixin(object):
         else:
             context_datatable_name = re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', table.model.__name__).lower().strip('_') + "_table"
         return context_datatable_name
+    
+    
+    def get_context_data(self, **kwargs):
+        """
+        Get the context for this view.
+        """
+        queryset = kwargs.pop('object_list')
+        queryset.info=queryset.object_list
+        context = {
+            'object_list': queryset
+        }
+        context_object_name = self.get_context_object_name(queryset)
+        if context_object_name is not None:
+            context[context_object_name] = queryset
+        context.update(kwargs)
+        print dir(queryset)
+        return context
+        
+        # return super(DatatableMixin, self).get_context_data(**context)
        
 class DatatableView(DatatableMixin, ListView):
    """
