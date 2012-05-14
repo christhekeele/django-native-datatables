@@ -1,6 +1,7 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.views.generic.list import MultipleObjectMixin, ListView
 
+from django.utils import simplejson
 import re
 
 from datatables.tables import default_datatable
@@ -17,8 +18,8 @@ class DatatableMixin(object):
         Return a table object to use. The table has automatic support for
         sorting and pagination.
         """
-        if self.request.GET:
-            return self.request.GET
+        if self.request.GET.get('datatable', False):
+            return simplejson.loads(self.request.GET['datatable'])
         else:
             return self.datatable.initial
 
@@ -37,6 +38,7 @@ class DatatableMixin(object):
                                        % {"cls": type(self).__name__})
         # Give datatable id so it can be referenced in html DOM elements
         datatable.id = self.get_context_object_name(datatable)
+        datatable.state = simplejson.dumps(self.get_tranformation_params())
         return datatable.all().transform(**self.get_tranformation_params())
 
     def get_context_object_name(self, table):
@@ -56,15 +58,26 @@ class DatatableMixin(object):
         Get the context for this view.
         """
         queryset = kwargs.pop('object_list')
-        queryset.info=queryset.object_list
-        context = {
-            'object_list': queryset
-        }
         context_object_name = self.get_context_object_name(queryset)
+
+        if getattr(queryset,"object_list", False):
+            context = {
+                'paginator': queryset.paginator,
+                'page_obj': queryset,
+                'is_paginated': True,
+                'object_list': queryset.object_list
+            }
+        else:
+            context = {
+                'paginator': None,
+                'page_obj': None,
+                'is_paginated': False,
+                'object_list': queryset
+            }
         if context_object_name is not None:
-            context[context_object_name] = queryset
+            context[context_object_name] = getattr(queryset,"object_list", queryset)
+            
         context.update(kwargs)
-        print dir(queryset)
         return context
         
         # return super(DatatableMixin, self).get_context_data(**context)

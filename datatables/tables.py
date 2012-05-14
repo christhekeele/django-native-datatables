@@ -1,11 +1,12 @@
 # EXAMPLE DATATABLE
 
 # from datatables.tables import Datatable
-# class CompanyDatatable(datatables.Datatable):
-#     filterable = "active priority"
-#     searchable = "name description email"
-#     orderable = "created_at updated_at acquired_on"
-#     initial = dict(search_param="",filter_values=dict(active=True),ordering=dict(acquired_on="desc"))
+# class CompanyDatatable(Datatable):
+#     filterable = "billing_status_id status_id priority_id"
+#     searchable = "name"
+#     orderable = "phone created_at updated_at"
+#     paginate = True
+#     initial = dict(search_param="",filter_values=dict(),ordering=dict(created_at="desc"),page_number=1,per_page=20)
 
 from django.db.models import Manager
 from django.db.models.query import QuerySet
@@ -15,7 +16,7 @@ class Datatable(Manager):
     state = {}
     def __init__(self, *args, **kwargs):
         super(Datatable, self).__init__()
-        self.keys=['id','searchable','filterable','orderable','paginate','paginator','page_object','page','initial']
+        self.keys=['id','searchable','filterable','orderable','paginate','paginator','per_page','state','initial']
         for key in self.keys:
             if not hasattr(self,key):
                 setattr(self,key,None)
@@ -36,40 +37,6 @@ class Datatable(Manager):
         
 
 class DataSet(QuerySet):
-        
-    def transform(self, **kwargs):
-        search_param=kwargs.get('search_param',"")
-        filter_values=kwargs.get('filter_values',{})
-        ordering=kwargs.get('ordering',{})
-        per_page=kwargs.get('per_page',20)
-        page_number=kwargs.get('page_number',1)
-        chain = self._clone()
-        if getattr(self,'searchable',False):
-            chain = chain.search(search_param)
-        if getattr(self,'filterable',False):
-            chain = chain.filter_data(filter_values)
-        if getattr(self,'orderable',False):
-            chain = chain.order(ordering)
-        if getattr(self,'paginate',False):
-            chain = chain.paginate_data(per_page, page_number)
-        return chain
-    
-    def search(self, search_param):
-        search_args = { search_field+"__icontains":search_param for search_field in self.searchable.split() }
-        return self.filter(**search_args) if search_args else self
-        
-    def filter_data(self, filter_values):
-        filter_args = { filter_field:selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filterable }
-        return self.filter(**filter_args) if filter_args else self
-    
-    def order(self, ordering):
-        order_args = [(("-" if direction=="desc" else "")+order_field) for order_field, direction in ordering.iteritems() if order_field in self.orderable]
-        return self.order_by(*order_args) if order_args else self
-        
-    def paginate_data(self, per_page, page_number):
-        return self.paginator(self, per_page).page(page_number)
-        pass
-            
     ##########
     # Override base QuerySet methods to keep track of DataSet meta
     ##########
@@ -96,6 +63,42 @@ class DataSet(QuerySet):
         if setup and hasattr(c, '_setup_query'):
             c._setup_query()
         return c
+    ##########
+    # End overrides
+    ##########
+    
+    def transform(self, **kwargs):
+        search_param=kwargs.get('search_param',"")
+        filter_values=kwargs.get('filter_values',{})
+        ordering=kwargs.get('ordering',{})
+        per_page=kwargs.get('per_page',20)
+        page_number=kwargs.get('page_number',1)
+        chain = self._clone()
+        if getattr(self,'filterable',False):
+            chain = chain.filter_data(filter_values)
+        if getattr(self,'searchable',False):
+            chain = chain.search(search_param)
+        if getattr(self,'orderable',False):
+            chain = chain.order(ordering)
+        if getattr(self,'paginate',False):
+            chain = chain.paginate_data(per_page, page_number)
+        return chain
+    
+    def filter_data(self, filter_values):
+        filter_args = { filter_field:selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filterable and selection }
+        return self.filter(**filter_args) if filter_args else self
+        
+    def search(self, search_param):
+        search_args = { search_field+"__icontains":search_param for search_field in self.searchable.split() }
+        return self.filter(**search_args) if search_args else self
+        
+    def order(self, ordering):
+        order_args = [(("-" if direction=="desc" else "")+order_field) for order_field, direction in ordering.iteritems() if order_field in self.orderable]
+        return self.order_by(*order_args) if order_args else self
+        
+    def paginate_data(self, per_page, page_number):
+        return self.paginator(self, per_page).page(page_number)
+            
 
 class DataList(list):
     ##########
