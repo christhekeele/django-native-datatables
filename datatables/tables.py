@@ -85,7 +85,7 @@ class DataSet(QuerySet):
         return chain
     
     def filter_data(self, filter_values):
-        filter_args = { filter_field:selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filterable and selection }
+        filter_args = { filter_field+"__in":selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filterable and selection }
         return self.filter(**filter_args) if filter_args else self
         
     def search(self, search_param):
@@ -93,8 +93,9 @@ class DataSet(QuerySet):
         return self.filter(**search_args) if search_args else self
         
     def order(self, ordering):
-        order_args = [(("-" if direction=="desc" else "")+order_field) for order_field, direction in ordering.iteritems() if order_field in self.orderable]
-        return self.order_by(*order_args) if order_args else self
+        for order_field, direction in ordering.iteritems():
+            order_args = ("-" if direction=="desc" else "")+order_field
+        return self.order_by(order_args) if order_args else self
         
     def paginate_data(self, per_page, page_number):
         return self.paginator(self, per_page).page(page_number)
