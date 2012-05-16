@@ -7,16 +7,38 @@
 #     orderable = "phone created_at updated_at"
 #     paginate = True
 #     initial = dict(search_param="",filter_values=dict(),ordering=dict(created_at="desc"),page_number=1,per_page=20)
-
+from bisect import bisect
+from .filters import Filter
 from django.db.models import Manager
 from django.db.models.query import QuerySet
 from django.core.paginator import Paginator
 
-class Datatable(Manager):
-    state = {}
+class DatatableMetaclass(type):
+    def __new__(cls, name, bases, attrs):
+        # # If this isn't a subclass of Datatable, don't do anything special.
+        # try:
+        #     parents = [b for b in bases if issubclass(b, ModelForm)]
+        # except NameError:
+        #     # We are defining ModelForm itself.
+        #     parents = None
+        # new_class = super(ModelFormMetaclass, cls).__new__(cls, name, bases, attrs)
+        # if not parents:
+        #     return new_class
+            
+        attrs['filters']={}
+        for key, attr in attrs.items():
+            if isinstance(attr, Filter):
+                # Populate a list of filters that were declared
+                attrs['filters'][key] = attr
+                # attr.set_name(key)
+                # cls.base_filters.insert(bisect(cls.base_filters, attr), attr)
+        
+        return super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
+
+class BaseDatatable(Manager):
     def __init__(self, *args, **kwargs):
-        super(Datatable, self).__init__()
-        self.keys=['id','searchable','filterable','orderable','paginate','paginator','per_page','state','initial']
+        super(BaseDatatable, self).__init__()
+        self.keys=['id','filters','searchable','filterable','orderable','paginate','paginator','per_page','state','initial']
         for key in self.keys:
             if not hasattr(self,key):
                 setattr(self,key,None)
@@ -34,7 +56,9 @@ class Datatable(Manager):
                         keys=self.keys,
                         **{ key:getattr(self, key) for key in self.keys }
         )
-        
+
+class Datatable(BaseDatatable):
+    __metaclass__ = DatatableMetaclass
 
 class DataSet(QuerySet):
     ##########
@@ -85,7 +109,7 @@ class DataSet(QuerySet):
         return chain
     
     def filter_data(self, filter_values):
-        filter_args = { filter_field+"__in":selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filterable and selection }
+        filter_args = { filter_field+"__in":selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filters }
         return self.filter(**filter_args) if filter_args else self
         
     def search(self, search_param):
