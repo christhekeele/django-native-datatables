@@ -3,7 +3,7 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(document).ready(function() {
-    var $datatable, datatable, multi_filter, paginate, search, single_filter, table_name, tables, update_table, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3;
+    var $datatable, datatable, multi_filter, paginate, single_filter, table_name, tables, update_table, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2;
     tables = $('div:data("table")');
     for (_i = 0, _len = tables.length; _i < _len; _i++) {
       datatable = tables[_i];
@@ -14,30 +14,34 @@
       for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
         single_filter = _ref[_j];
         $(single_filter).find(':data("filter")').live('click', function() {
-          return update_table(table_name, 'single_filter', $(single_filter).data('table-single-filter'), $(this).data('filter'));
+          return update_table(table_name, 'single_filter', $(this).parent().data('table-single-filter'), $(this).data('filter'));
         });
       }
       _ref1 = $datatable.find(':data("table-multi-filter")');
       for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
         multi_filter = _ref1[_k];
         $(multi_filter).find(':data("filter")').live('click', function() {
-          return update_table(table_name, 'multi_filter', $(multi_filter).data('table-multi-filter'), $(this).data('filter'));
+          return update_table(table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), $(this).data('filter'));
         });
       }
-      _ref2 = $datatable.find(':data("table-search")');
-      for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {
-        search = _ref2[_l];
-        $(search).find(':data("search")').live('keyup', function() {
-          return update_table(table_name, 'search', false, $(search).find(':data("search")').val());
-        });
-      }
-      $datatable.find(':data("table-order")').live('click', function() {
-        console.log($(this));
-        return update_table(table_name, 'order', $(this).data('table-order'), false);
+      $datatable.find(':data("table-search")').live('keyup', function() {
+        return update_table(table_name, 'search', false, $(this).val());
       });
-      _ref3 = $datatable.find(':data("table-paginate")');
-      for (_m = 0, _len4 = _ref3.length; _m < _len4; _m++) {
-        paginate = _ref3[_m];
+      $datatable.find(':data("table-order")').live('click', function() {
+        var default_order;
+        default_order = 'asc';
+        $(this).parent().children(':data("table-order")').removeClass('active');
+        $(this).addClass('active');
+        if (!$(this).hasClass('asc') && !$(this).hasClass('desc')) {
+          $(this).addClass(default_order);
+        } else {
+          $(this).toggleClass("asc desc");
+        }
+        return update_table(table_name, 'order', $(this).data('table-order'), default_order);
+      });
+      _ref2 = $datatable.find(':data("table-paginate")');
+      for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {
+        paginate = _ref2[_l];
         $(paginate).find(':data("per_page")').live('click', function() {
           return update_table(table_name, 'per_page', false, $(this).data('per_page'));
         });
@@ -47,18 +51,18 @@
       }
     }
     return update_table = function(table_name, action, target, value) {
-      var array, _ref10, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+      var array, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
       if (action === 'search') {
         window[table_name].search_param = value;
         window[table_name].page_number = 1;
       }
       if (action === 'single_filter') {
-        if (!((_ref4 = window[table_name]) != null ? (_ref5 = _ref4.filter_values) != null ? _ref5[target] : void 0 : void 0)) {
+        if (!((_ref3 = window[table_name]) != null ? (_ref4 = _ref3.filter_values) != null ? _ref4[target] : void 0 : void 0)) {
           window[table_name].filter_values[target] = [];
         }
         array = window[table_name].filter_values[target];
         if (value) {
-          if (_ref6 = !value, __indexOf.call(array, _ref6) >= 0) {
+          if (_ref5 = !value, __indexOf.call(array, _ref5) >= 0) {
 
           } else {
             array.length = 0;
@@ -70,7 +74,7 @@
         window[table_name].page_number = 1;
       }
       if (action === 'multi_filter') {
-        if (!((_ref7 = window[table_name]) != null ? (_ref8 = _ref7.filter_values) != null ? _ref8[target] : void 0 : void 0)) {
+        if (!((_ref6 = window[table_name]) != null ? (_ref7 = _ref6.filter_values) != null ? _ref7[target] : void 0 : void 0)) {
           window[table_name].filter_values[target] = [];
         }
         array = window[table_name].filter_values[target];
@@ -86,15 +90,15 @@
         window[table_name].page_number = 1;
       }
       if (action === 'order') {
-        if (((_ref9 = window[table_name].ordering) != null ? _ref9[target] : void 0) === "desc") {
+        if (((_ref8 = window[table_name].ordering) != null ? _ref8[target] : void 0) === "desc") {
           window[table_name].ordering = {};
           window[table_name].ordering[target] = "asc";
-        } else if (((_ref10 = window[table_name].ordering) != null ? _ref10[target] : void 0) === "asc") {
+        } else if (((_ref9 = window[table_name].ordering) != null ? _ref9[target] : void 0) === "asc") {
           window[table_name].ordering = {};
           window[table_name].ordering[target] = "desc";
         } else {
           window[table_name].ordering = {};
-          window[table_name].ordering[target] = "asc";
+          window[table_name].ordering[target] = value;
         }
       }
       if (action === 'per_page') {
