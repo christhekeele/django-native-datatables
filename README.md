@@ -117,4 +117,4 @@ If the state of the table is changed through the Features attributes, jQuery wil
 
 As I am producing this on my own, for only one of my projects at work, feature development may be slow. However, my co-workers and I are likely to use it in future projects down the line, so bug/error/optimization improvements will be ongoing.
 
-All issues are appreciated, and any pull requests are welcome.
+All issues are appreciated, and any pull requests are welcome. Check the Milestones for a roadmap of development, and chip in if you feel like it!
