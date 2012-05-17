@@ -8,10 +8,16 @@
 #     paginate = True
 #     initial = dict(search_param="",filter_values=dict(),ordering=dict(created_at="desc"),page_number=1,per_page=20)
 from bisect import bisect
-from .filters import Filter
+from .features import BaseFeature, BaseFilter
 from django.db.models import Manager
 from django.db.models.query import QuerySet
 from django.core.paginator import Paginator
+from django.utils.encoding import smart_unicode
+from django.utils.safestring import mark_safe
+
+class FeatureSet(list):
+    def __unicode__(self):
+        return mark_safe(''.join([item.__unicode__() for item in self]))
 
 class DatatableMetaclass(type):
     def __new__(cls, name, bases, attrs):
@@ -24,33 +30,26 @@ class DatatableMetaclass(type):
         # new_class = super(ModelFormMetaclass, cls).__new__(cls, name, bases, attrs)
         # if not parents:
         #     return new_class
-            
-        attrs['filters']={}
+        
+        attrs['features']=FeatureSet(())
+        attrs['filters']=FeatureSet(())
         for key, attr in attrs.items():
-            if isinstance(attr, Filter):
+            if isinstance(attr, BaseFeature):
                 # Populate a list of filters that were declared
-                attrs['filters'][key] = attr
-                # attr.set_name(key)
-                # cls.base_filters.insert(bisect(cls.base_filters, attr), attr)
+                attr.set_name(key)
+                attrs['features'].insert(bisect(attrs['features'], attr), attr)
+                if isinstance(attr, BaseFilter):
+                    attrs['filters'].insert(bisect(attrs['filters'], attr), attr)
         
         return super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
 
 class BaseDatatable(Manager):
     def __init__(self, *args, **kwargs):
         super(BaseDatatable, self).__init__()
-        self.keys=['id','filters','searchable','filterable','orderable','paginate','paginator','per_page','state','initial']
+        self.keys=['id','features','filters','searchable','filterable','orderable','paginate','paginator','per_page','state','initial']
         for key in self.keys:
             if not hasattr(self,key):
                 setattr(self,key,None)
-        # self.state = dict(
-        #             id=getattr(self,'id',""),
-        #             searchable=getattr(self,'searchable',""),
-        #             filterable=getattr(self,'filterable',""),
-        #             orderable=getattr(self,'orderable',""),
-        #             paginator=getattr(self,'paginator',Paginator),
-        #             is_paginated=False
-        #             initial=getattr(self,'initial',{})
-        # )
     def get_query_set(self):
         return DataSet(model=self.model, query=None, using=None,
                         keys=self.keys,
@@ -98,7 +97,7 @@ class DataSet(QuerySet):
         per_page=kwargs.get('per_page',20)
         page_number=kwargs.get('page_number',1)
         chain = self._clone()
-        if getattr(self,'filterable',False):
+        if getattr(self,'filters',False):
             chain = chain.filter_data(filter_values)
         if getattr(self,'searchable',False):
             chain = chain.search(search_param)
@@ -109,7 +108,16 @@ class DataSet(QuerySet):
         return chain
     
     def filter_data(self, filter_values):
-        filter_args = { filter_field+"__in":selection for filter_field, selection in filter_values.iteritems() if filter_field in self.filters }
+        print filter_values
+        filter_args = {}
+        for filter_field, selection in filter_values.iteritems():
+            if filter_field in [f.name for f in self.filters]:
+                if isinstance(selection, list):
+                    filter_args[filter_field+"__in"]=selection
+                else:
+                    filter_args[filter_field]=selection
+        # filter_args = { filter_field+"__in":selection for filter_field, selection in filter_values.iteritems() if filter_field in [f.name for f in self.filters] }
+        print filter_args
         return self.filter(**filter_args) if filter_args else self
         
     def search(self, search_param):

@@ -51,49 +51,40 @@
       }
     }
     return update_table = function(table_name, action, target, value) {
-      var array, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9;
+      var array, _ref3, _ref4, _ref5, _ref6, _ref7;
+      console.log(table_name, action, target, value);
       if (action === 'search') {
         window[table_name].search_param = value;
         window[table_name].page_number = 1;
       }
       if (action === 'single_filter') {
-        if (!((_ref3 = window[table_name]) != null ? (_ref4 = _ref3.filter_values) != null ? _ref4[target] : void 0 : void 0)) {
-          window[table_name].filter_values[target] = [];
+        if (((_ref3 = window[table_name].filter_values) != null ? _ref3[target] : void 0) !== value) {
+          window[table_name].filter_values[target] = value;
         }
-        array = window[table_name].filter_values[target];
-        if (value) {
-          if (_ref5 = !value, __indexOf.call(array, _ref5) >= 0) {
-
-          } else {
-            array.length = 0;
-            array.push(value);
-          }
-        } else {
-          array.length = 0;
+        if (!window[table_name].filter_values[target]) {
+          delete window[table_name].filter_values[target];
         }
         window[table_name].page_number = 1;
       }
       if (action === 'multi_filter') {
-        if (!((_ref6 = window[table_name]) != null ? (_ref7 = _ref6.filter_values) != null ? _ref7[target] : void 0 : void 0)) {
-          window[table_name].filter_values[target] = [];
-        }
-        array = window[table_name].filter_values[target];
+        array = (_ref4 = window[table_name].filter_values) != null ? (_ref5 = _ref4[target]) != null ? _ref5 : _ref4[target] = [] : void 0;
         if (value) {
           if (__indexOf.call(array, value) >= 0) {
             array.splice(array.indexOf(value), 1);
           } else {
             array.push(value);
           }
-        } else {
-          window[table_name].filter_values[target].length = 0;
+          if (!array.length) {
+            delete window[table_name].filter_values[target];
+          }
         }
         window[table_name].page_number = 1;
       }
       if (action === 'order') {
-        if (((_ref8 = window[table_name].ordering) != null ? _ref8[target] : void 0) === "desc") {
+        if (((_ref6 = window[table_name].ordering) != null ? _ref6[target] : void 0) === "desc") {
           window[table_name].ordering = {};
           window[table_name].ordering[target] = "asc";
-        } else if (((_ref9 = window[table_name].ordering) != null ? _ref9[target] : void 0) === "asc") {
+        } else if (((_ref7 = window[table_name].ordering) != null ? _ref7[target] : void 0) === "asc") {
           window[table_name].ordering = {};
           window[table_name].ordering[target] = "desc";
         } else {

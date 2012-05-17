@@ -35,30 +35,22 @@ $(document).ready ->
         update_table table_name, 'page', false, $(this).data('page')
     
   update_table = (table_name, action, target, value) ->
+    console.log table_name, action, target, value
     if action == 'search'
       window[table_name].search_param = value
       window[table_name].page_number = 1
       
     if action == 'single_filter'
-      if not window[table_name]?.filter_values?[target]
-        window[table_name].filter_values[target] = []
-      array = window[table_name].filter_values[target]
-      if value
-        if not value in array else
-          array.length = 0
-          array.push(value)
-      else
-        array.length = 0
+      if window[table_name].filter_values?[target] != value
+        window[table_name].filter_values[target] = value
+      if not window[table_name].filter_values[target] then delete window[table_name].filter_values[target]
       window[table_name].page_number = 1
     
     if action == 'multi_filter'
-      if not window[table_name]?.filter_values?[target]
-        window[table_name].filter_values[target] = []
-      array = window[table_name].filter_values[target]
+      array = window[table_name].filter_values?[target] ?= []
       if value
         if value in array then array.splice(array.indexOf(value), 1) else array.push(value)
-      else
-          window[table_name].filter_values[target].length = 0
+        if not array.length then delete window[table_name].filter_values[target]
       window[table_name].page_number = 1
       
     if action == 'order'
@@ -71,7 +63,6 @@ $(document).ready ->
       else
         window[table_name].ordering = {}
         window[table_name].ordering[target] = value
-      # window[table_name].page_number = 1
       
     if action == 'per_page'
       window[table_name].per_page = value
