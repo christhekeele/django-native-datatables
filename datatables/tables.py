@@ -1,12 +1,3 @@
-# EXAMPLE DATATABLE
-
-# from datatables.tables import Datatable
-# class CompanyDatatable(Datatable):
-#     filterable = "billing_status_id status_id priority_id"
-#     searchable = "name"
-#     orderable = "phone created_at updated_at"
-#     paginate = True
-#     initial = dict(search_param="",filter_values=dict(),ordering=dict(created_at="desc"),page_number=1,per_page=20)
 from bisect import bisect
 from .features import BaseFeature, BaseFilter
 from django.db.models import Manager
@@ -116,7 +107,6 @@ class DataSet(QuerySet):
                     filter_args[filter_field+"__in"]=selection
                 else:
                     filter_args[filter_field]=selection
-        # filter_args = { filter_field+"__in":selection for filter_field, selection in filter_values.iteritems() if filter_field in [f.name for f in self.filters] }
         print filter_args
         return self.filter(**filter_args) if filter_args else self
         
