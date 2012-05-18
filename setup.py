@@ -1,7 +1,4 @@
-try:
-    from setuptools import setup, find_packages
-except:
-    from distutils.core import setup, find_packages
+from setuptools import setup, find_packages
 setup(
     name = "django-native-datatables",
     version = "0.8.0",
@@ -9,7 +6,20 @@ setup(
     author = "Christopher Keele",
     author_email = "email@chriskeele.com",
     description = "Add high-performance data-driven tables to your models, with full control template-side",
+    long_description = open('README.txt').read(),
     url = "",
     include_package_data = True,
-    zip_safe = False
+    zip_safe = False,
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Environment :: Web Environment',
+        'Framework :: Django',
+        'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
+        'Programming Language :: JavaScript',
+        'Programming Language :: Python',
+        'Topic :: Software Development :: Libraries :: Application Frameworks',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Database :: Front-Ends',
+    ],
 )
