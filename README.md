@@ -9,6 +9,12 @@
 
 The goal of django-native-datatables is to implement all the functionality of the [jquery datatables plugin](http://datatables.net) over a standard ListView queryset workflow (`for object in object_list`) with complete control over which features are implemented and how they are styled. Django-datatables is built to avoid deviating from standard django workflows, easily apply to existing apps, mixin cleanly into ListViews, and give maximum control to both back-end and front-end developers. By looping through an overridden, filtered queryset, nothing but what you see on a single page hits the database. Template tags use AJAX to update the queryset with new filters, avoiding full page reload. The end product is a polished, lightweight, natural django extension of your existing querysets.
 
+## News ##
+
+- Repo renamed to django-native-datatables, sorry if that threw you off!
+- Registering with PyPi soon as 'django-native-datatables'
+- Remember to use 'nativetables' in your INSTALLED_APPS now.
+
 ## Features: ##
 
 -  Diverse chainable filtering (show only active users, with either a cat or a dog as a pet, who work for pet store x)
