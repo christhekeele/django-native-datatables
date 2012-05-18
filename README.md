@@ -1,13 +1,13 @@
-# Django Datatables #
+# Django Native Datatables #
 [![Build Status](https://secure.travis-ci.org/christhekeele/django-datatables.png)](http://travis-ci.org/christhekeele/django-datatables)
 
 ## V0.9 underway ##
 
-### ANY ADVERTISED FEATURES MAY OR MAY NOT BE FUNCTIONAL ###
+### I reccommend waiting for V1.0 before playing with the code, and V1.1 before trying to apply to a project ###
 
 ###### If you like what you see, watch this repo for updates. More watchers == more encouragement for me to get this thing out the door. ######
 
-The goal of django-datatables is to implement all the functionality of the [jquery datatables plugin](http://datatables.net) over a standard ListView queryset workflow (`for object in object_list`) with complete control over which features are implemented and how they are styled. Django-datatables is built to avoid deviating from standard django workflows, easily apply to existing apps, mixin cleanly into ListViews, and give maximum control to both back-end and front-end developers. By looping through an overridden, filtered queryset, nothing but what you see on a single page hits the database. Template tags use AJAX to update the queryset with new filters, avoiding full page reload. The end product is a polished, lightweight, natural django extension of your existing querysets.
+The goal of django-native-datatables is to implement all the functionality of the [jquery datatables plugin](http://datatables.net) over a standard ListView queryset workflow (`for object in object_list`) with complete control over which features are implemented and how they are styled. Django-datatables is built to avoid deviating from standard django workflows, easily apply to existing apps, mixin cleanly into ListViews, and give maximum control to both back-end and front-end developers. By looping through an overridden, filtered queryset, nothing but what you see on a single page hits the database. Template tags use AJAX to update the queryset with new filters, avoiding full page reload. The end product is a polished, lightweight, natural django extension of your existing querysets.
 
 ## Features: ##
 
@@ -22,10 +22,10 @@ The goal of django-datatables is to implement all the functionality of the [jque
    -  Per-record actions (ie: show, edit, delete)
    -  Batch actions across selected records (ie: export, delete, deactivate, change owner)
 
-### How django-datatables differs from datatables.net: ###
+### How django-native-datatables differs from datatables.net: ###
 
 -  __There's no need to hook into the ORM yourself.__  
-   Django-datatables automatically passes all the AJAX parameters to it's own custom queryset (Dataset) that calls a transformation function before rendering. The transformation method calls other method to apply queryset filters, one method per feature, leveraging all the power of Django's querysets for you. The filters are chained resulting in a single, specific query that hits the database exactly how it needs to, no more and no less.
+   Django-native-datatables automatically passes all the AJAX parameters to it's own custom queryset (Dataset) that calls a transformation function before rendering. The transformation method calls other method to apply queryset filters, one method per feature, leveraging all the power of Django's querysets for you. The filters are chained resulting in a single, specific query that hits the database exactly how it needs to, no more and no less.
 -  __Each datatable can be customized from a simple schema.__  
    Simply define which fields and features you want to expose on a model in a `ModelForm` inspired schema and pass it to the view's `as_view()`. The transformation methods will listen to the schema and apply (or disable) features as requested.
 -  __All transformation methods are overrideable if necessary.__  
@@ -35,7 +35,7 @@ The goal of django-datatables is to implement all the functionality of the [jque
 -  __You can control every element of the styling.__  
    `object_list` is still yours to break down and display, but much like a `ModelForm` your customized search bars, filters, etc will be available as `{{ object_list.awesome_filter }}` with an overrideable template used in the rendering, or like `ModelForm`s you can break it down manually like `{{ for option in object_list.awesome_filter }}`.
    
-### How django-datatables works like datatables.net: ###
+### How django-native-datatables works like datatables.net: ###
 
 -  All of the same features are available.
 -  Interfacing with the datatable uses AJAX, keeping the entire page from reloading.
@@ -55,11 +55,11 @@ The app is broken down into several main parts.
 
 ### Quickstart: ###
 
-Download django-datatables and add `datatables` to your installed apps.
+Download django-native-datatables and add `nativetables` to your installed apps.
 
 Use the DatatableView in your urls.py instead of a ListView, with slightly different paramerters:
 
-    from datatables.views import DatatableView
+    from nativetables.views import DatatableView
     urlpatterns = patterns('awesome.views',
         ....
         url(r'^table/$',
@@ -75,7 +75,7 @@ Use the DatatableView in your urls.py instead of a ListView, with slightly diffe
 Then include jQuery and the datatables.js, and enjoy the new features around your old template:
 
     <script src="/path/to/jquery.js" type="text/javascript"></script>
-    <script src="/path/to/datatables.js" type="text/javascript"></script>
+    <script src="/path/to/nativetables.js" type="text/javascript"></script>
     
     {{ object_list.filters }}
     {{ object_list.search_bar }}
