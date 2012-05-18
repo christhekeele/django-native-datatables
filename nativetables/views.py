@@ -4,7 +4,7 @@ from django.views.generic.list import MultipleObjectMixin, ListView
 from django.utils import simplejson
 import re
 
-from datatables.tables import default_datatable
+from .tables import default_datatable
 
 class DatatableMixin(object):
     '''
