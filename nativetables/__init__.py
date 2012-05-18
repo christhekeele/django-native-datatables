@@ -1,2 +1,2 @@
-from datatables.tables import Datatable
-from datatables.features import *
+from nativetables.tables import Datatable
+from nativetables.features import *

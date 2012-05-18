@@ -3,7 +3,7 @@
 # from django.conf.urls import patterns, url
 # from company.models import Company,
 # 
-# from datatables.views import DatatableView
+# from nativetables.views import DatatableView
 # 
 # urlpatterns = patterns('company.views',
 #     url(r'^table/$',

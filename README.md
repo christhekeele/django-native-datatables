@@ -72,7 +72,7 @@ Use the DatatableView in your urls.py instead of a ListView, with slightly diffe
         ....
     )
 
-Then include jQuery and the datatables.js, and enjoy the new features around your old template:
+Then include jQuery and the nativetables.js, and enjoy the new features around your old template:
 
     <script src="/path/to/jquery.js" type="text/javascript"></script>
     <script src="/path/to/nativetables.js" type="text/javascript"></script>
