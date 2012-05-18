@@ -1,5 +1,5 @@
 # Django Native Datatables #
-[![Build Status](https://secure.travis-ci.org/christhekeele/django-datatables.png)](http://travis-ci.org/christhekeele/django-datatables)
+[![Build Status](https://secure.travis-ci.org/christhekeele/django-native-datatables.png)](http://travis-ci.org/christhekeele/django-native-datatables)
 
 ## V0.9 underway ##
 
