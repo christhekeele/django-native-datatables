@@ -1,0 +1,6 @@
+<select data-table-select-filter="{{name}}">
+  <option value>Filter by {{label}}</a>
+  {% for id, title in choices.iteritems %}
+    <option value="{{id}}">{{title}}</option>
+  {% endfor %}
+</select>

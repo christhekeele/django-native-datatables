@@ -10,34 +10,46 @@ class FeatureSet(list):
     def __unicode__(self):
         return mark_safe(''.join([item.__unicode__() for item in self]))
 
+class DatatableOptions(object):
+    def __init__(self, options=None):
+        self.name = getattr(options, 'name', 'datatable')
+        self.model = getattr(options, 'model', None)
+        
+class DatatableState(object):
+    def __init__(self, state=None):
+        self.search_param = getattr(state, 'search_param', '')
+        self.filter_values = getattr(state, 'filter_values', {})
+        self.ordering = getattr(state, 'ordering', {})
+        self.page_number = getattr(state, 'page_number', 1)
+        self.page = getattr(state, 'page', None)
+        # self.fields = getattr(options, 'fields', None)
+        # self.exclude = getattr(options, 'exclude', None)
+        # self.widgets = getattr(options, 'widgets', None)
+
 class DatatableMetaclass(type):
     def __new__(cls, name, bases, attrs):
-        # # If this isn't a subclass of Datatable, don't do anything special.
-        # try:
-        #     parents = [b for b in bases if issubclass(b, ModelForm)]
-        # except NameError:
-        #     # We are defining ModelForm itself.
-        #     parents = None
-        # new_class = super(ModelFormMetaclass, cls).__new__(cls, name, bases, attrs)
-        # if not parents:
-        #     return new_class
-        
-        attrs['features']=FeatureSet(())
-        attrs['filters']=FeatureSet(())
+        new_table = super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
+        features = attrs.get('features', FeatureSet(()))
+        filters = attrs.get('filters', FeatureSet(()))
         for key, attr in attrs.items():
+            # print key, attr
             if isinstance(attr, BaseFeature):
-                # Populate a list of filters that were declared
+                # Populate a list of features that were declared
                 attr.set_name(key)
-                attrs['features'].insert(bisect(attrs['features'], attr), attr)
+                features.insert(bisect(features, attr), attr)
                 if isinstance(attr, BaseFilter):
-                    attrs['filters'].insert(bisect(attrs['filters'], attr), attr)
-        
-        return super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
+                    filters.insert(bisect(filters, attr), attr)
+                    
+        new_table.features=features
+        new_table.filters=filters
+        new_table._meta = DatatableOptions(getattr(new_table, 'Meta', None))
+        new_table._state = DatatableState(getattr(new_table, 'Initial', None))
+        return new_table
 
 class BaseDatatable(Manager):
     def __init__(self, *args, **kwargs):
         super(BaseDatatable, self).__init__()
-        self.keys=['id','features','filters','searchable','filterable','orderable','paginate','paginator','per_page','state','initial']
+        self.keys=['id','features','filters','searches','orderings','pagination','searchable','orderable','paginate','paginator','state','initial']
         for key in self.keys:
             if not hasattr(self,key):
                 setattr(self,key,None)
@@ -46,23 +58,32 @@ class BaseDatatable(Manager):
                         keys=self.keys,
                         **{ key:getattr(self, key) for key in self.keys }
         )
-
+    def transform(self, **kwargs):
+        return self.get_query_set().transform(**kwargs)
+                
 class Datatable(BaseDatatable):
     __metaclass__ = DatatableMetaclass
-
+    def __init__(self, *args, **kwargs):
+        super(Datatable, self).__init__()
+        # Pin Datatable to associated model
+        self._meta.model.add_to_class(self._meta.name, self)
+        # Give datatable model info for abstraction
+        self.model = self._meta.model
+        
 class DataSet(QuerySet):
     ##########
     # Override base QuerySet methods to keep track of DataSet meta
     ##########
-    def __init__(self, keys, model=None, query=None, using=None, **kwargs):
+    def __init__(self, model, keys, query=None, using=None, **kwargs):
         super(DataSet, self).__init__(model, query, using)
+        self.model = model
         self.keys=keys
         for key in keys:
             setattr(self,key,kwargs[key])
     
     def __getitem__(self, k):
         result = super(DataSet, self).__getitem__(k)
-        return DataList(keys=self.keys, result=result, **{ key:getattr(self, key) for key in self.keys })
+        return DataList(model=self.model, keys=self.keys, result=result, **{ key:getattr(self, key) for key in self.keys })
     
     def _clone(self, klass=None, setup=False, **kwargs):
         if klass is None:
@@ -81,6 +102,11 @@ class DataSet(QuerySet):
     # End overrides
     ##########
     
+    # Modify datatable.state from a dict of options
+    def update_state(self, **kwargs):
+        
+    
+    # Apply pending changes to state
     def transform(self, **kwargs):
         search_param=kwargs.get('search_param',"")
         filter_values=kwargs.get('filter_values',{})
@@ -115,6 +141,7 @@ class DataSet(QuerySet):
         return self.filter(**search_args) if search_args else self
         
     def order(self, ordering):
+        print ordering
         for order_field, direction in ordering.iteritems():
             order_args = ("-" if direction=="desc" else "")+order_field
         return self.order_by(order_args) if order_args else self
@@ -127,8 +154,9 @@ class DataList(list):
     ##########
     ## Override base list methods to keep track of DataList meta
     ##########
-    def __init__(self, keys, result, **kwargs):
+    def __init__(self, model, keys, result, **kwargs):
         list.__init__(self, result)
+        self.model=model
         self.keys=keys
         for key in keys:
             setattr(self,key,kwargs[key])
