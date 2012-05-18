@@ -72,7 +72,7 @@ $(document).ready ->
       window[table_name].page_number = value
     
     $.ajax
-      url: "/company/table/"
+      url: ""
       type: "GET"
       datatype: "html"
       contentType: "application/json"
