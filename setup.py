@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name = "django-native-datatables",
-    version = "0.8.0",
+    version = "0.8.1",
     packages = find_packages(),
     author = "Christopher Keele",
     author_email = "email@chriskeele.com",
