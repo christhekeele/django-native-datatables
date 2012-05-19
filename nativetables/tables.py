@@ -1,4 +1,5 @@
 from bisect import bisect
+import inspect 
 from .features import BaseFeature, BaseFilter
 from django.db.models import Manager
 from django.db.models.query import QuerySet
@@ -16,12 +17,14 @@ class DatatableOptions(object):
         self.model = getattr(options, 'model', None)
         
 class DatatableState(object):
-    def __init__(self, state=None):
+    def __init__(self, paginate, state=None):
         self.search_param = getattr(state, 'search_param', '')
         self.filter_values = getattr(state, 'filter_values', {})
         self.ordering = getattr(state, 'ordering', {})
-        self.page_number = getattr(state, 'page_number', 1)
-        self.page = getattr(state, 'page', None)
+        if paginate:
+            self.page_number = getattr(state, 'page_number', 1)
+            self.per_page = getattr(state, 'per_page', 20)
+        self.is_changed = True
         # self.fields = getattr(options, 'fields', None)
         # self.exclude = getattr(options, 'exclude', None)
         # self.widgets = getattr(options, 'widgets', None)
@@ -43,13 +46,13 @@ class DatatableMetaclass(type):
         new_table.features=features
         new_table.filters=filters
         new_table._meta = DatatableOptions(getattr(new_table, 'Meta', None))
-        new_table._state = DatatableState(getattr(new_table, 'Initial', None))
+        new_table._state = DatatableState(getattr(new_table, 'Initial', None), attrs.get('paginate', True))
         return new_table
 
 class BaseDatatable(Manager):
     def __init__(self, *args, **kwargs):
         super(BaseDatatable, self).__init__()
-        self.keys=['id','features','filters','searches','orderings','pagination','searchable','orderable','paginate','paginator','state','initial']
+        self.keys=['id','features','filters','searches','orderings','pagination','searchable','orderable','paginate','paginator','_state','initial']
         for key in self.keys:
             if not hasattr(self,key):
                 setattr(self,key,None)
@@ -103,51 +106,47 @@ class DataSet(QuerySet):
     ##########
     
     # Modify datatable.state from a dict of options
-    def update_state(self, **kwargs):
-        
+    def update_state(self, changes):
+        if changes:
+            print changes
+            print dict(self._state.__dict__, **changes)
     
     # Apply pending changes to state
-    def transform(self, **kwargs):
-        search_param=kwargs.get('search_param',"")
-        filter_values=kwargs.get('filter_values',{})
-        ordering=kwargs.get('ordering',{})
-        per_page=kwargs.get('per_page',20)
-        page_number=kwargs.get('page_number',1)
+    def get_transformation(self, **kwargs):
         chain = self._clone()
-        if getattr(self,'filters',False):
-            chain = chain.filter_data(filter_values)
-        if getattr(self,'searchable',False):
-            chain = chain.search(search_param)
-        if getattr(self,'orderable',False):
-            chain = chain.order(ordering)
-        if getattr(self,'paginate',False):
-            chain = chain.paginate_data(per_page, page_number)
+        if self._state.is_changed:
+            if getattr(self,'filters', False):
+                chain = chain.filter_data()
+            if getattr(self,'searchable', False):
+                chain = chain.search()
+            if getattr(self,'orderable', False):
+                chain = chain.order()
+            if getattr(self,'paginate', False):
+                chain = chain.paginate_data()
         return chain
     
-    def filter_data(self, filter_values):
-        print filter_values
+    def filter_data(self):
         filter_args = {}
-        for filter_field, selection in filter_values.iteritems():
+        for filter_field, selection in self._state.filter_values.iteritems():
             if filter_field in [f.name for f in self.filters]:
                 if isinstance(selection, list):
                     filter_args[filter_field+"__in"]=selection
                 else:
                     filter_args[filter_field]=selection
-        print filter_args
         return self.filter(**filter_args) if filter_args else self
         
-    def search(self, search_param):
-        search_args = { search_field+"__icontains":search_param for search_field in self.searchable.split() }
+    def search(self):
+        search_args = { search_field+"__icontains":self._state.search_param for search_field in self.searchable.split() }
         return self.filter(**search_args) if search_args else self
         
-    def order(self, ordering):
-        print ordering
-        for order_field, direction in ordering.iteritems():
+    def order(self):
+        order_args = ""
+        for order_field, direction in self._state.ordering.iteritems():
             order_args = ("-" if direction=="desc" else "")+order_field
         return self.order_by(order_args) if order_args else self
         
-    def paginate_data(self, per_page, page_number):
-        return self.paginator(self, per_page).page(page_number)
+    def paginate_data(self):
+        return self.paginator(self, self._state.per_page).page(self._state.page_number) if self.paginate else self
             
 
 class DataList(list):

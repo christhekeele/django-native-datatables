@@ -38,7 +38,7 @@ class DatatableMixin(object):
                                        % {"cls": type(self).__name__})
         # Give datatable id so it can be referenced in html DOM elements
         datatable_instance.id = self.get_context_object_name(datatable_instance)
-        return datatable_instance
+        return datatable_instance.all()
 
     def get_context_object_name(self, queryset):
         """
@@ -93,10 +93,10 @@ class DatatableView(DatatableMixin, ListView):
         if not hasattr(request.session, 'datatable'):
             request.session['datatable'] = self.get_queryset()
         # If recieving params, update datatable state
-        print request.session['datatable']
         if request.GET:
-            request.session['datatable'] = request.session['datatable'].update_state(**request.GET)
-        self.object_list = request.session['datatable']
+            request.session['datatable'].update_state(request.GET)
+            
+        self.object_list = request.session['datatable'].get_transformation()
         
         allow_empty = self.get_allow_empty()
 
