@@ -1,15 +1,16 @@
 from bisect import bisect
+from collections import OrderedDict
 import inspect 
-from .features import BaseFeature, BaseFilter
+from .features import BaseFeature, BaseFilter, BaseSearch
 from django.db.models import Manager
 from django.db.models.query import QuerySet
 from django.core.paginator import Paginator
 from django.utils.encoding import smart_unicode
 from django.utils.safestring import mark_safe
 
-class FeatureSet(list):
+class FeatureDict(OrderedDict):
     def __unicode__(self):
-        return mark_safe(''.join([item.__unicode__() for item in self]))
+        return mark_safe(''.join([item.__unicode__() for item in self.values()]))
 
 class DatatableOptions(object):
     def __init__(self, options=None):
@@ -17,8 +18,8 @@ class DatatableOptions(object):
         self.model = getattr(options, 'model', None)
         
 class DatatableState(object):
-    def __init__(self, paginate, state=None):
-        self.search_param = getattr(state, 'search_param', '')
+    def __init__(self, state, paginate):
+        self.search_values = getattr(state, 'search_values', {})
         self.filter_values = getattr(state, 'filter_values', {})
         self.ordering = getattr(state, 'ordering', {})
         if paginate:
@@ -28,41 +29,64 @@ class DatatableState(object):
         # self.fields = getattr(options, 'fields', None)
         # self.exclude = getattr(options, 'exclude', None)
         # self.widgets = getattr(options, 'widgets', None)
-
+    
 class DatatableMetaclass(type):
     def __new__(cls, name, bases, attrs):
+        # super_new = super(ModelBase, cls).__new__
+        # parents = [b for b in bases if isinstance(b, Datatable)]
+        # if not parents:
+        #     # If this isn't a subclass of Datatable, don't do anything special.
+        #     return super_new(cls, name, bases, attrs)
+            
+        # If this isn't a subclass of Widget, don't do anything special.
+        # try:
+        #     if not filter(lambda b: issubclass(b, Datatable), bases):
+        #         return super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
+        # except NameError:
+        #     # 'Widget' isn't defined yet, meaning we're looking at our own
+        #     # Widget class, defined below.
+        #     return super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
+            
+        # print attrs
+        
         new_table = super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
-        features = attrs.get('features', FeatureSet(()))
-        filters = attrs.get('filters', FeatureSet(()))
+        features = attrs.get('features', FeatureDict({}))
+        filters = attrs.get('filters', FeatureDict({}))
+        searches = attrs.get('searches', FeatureDict({}))
         for key, attr in attrs.items():
-            # print key, attr
             if isinstance(attr, BaseFeature):
                 # Populate a list of features that were declared
                 attr.set_name(key)
-                features.insert(bisect(features, attr), attr)
+                features[key] = attr
                 if isinstance(attr, BaseFilter):
-                    filters.insert(bisect(filters, attr), attr)
-                    
+                    filters[key] = attr
+                if isinstance(attr, BaseSearch):
+                    searches[key] = attr
+
         new_table.features=features
         new_table.filters=filters
+        new_table.searches=searches
         new_table._meta = DatatableOptions(getattr(new_table, 'Meta', None))
-        new_table._state = DatatableState(getattr(new_table, 'Initial', None), attrs.get('paginate', True))
+        new_table._state = DatatableState(state=getattr(new_table, 'Initial', None), paginate=attrs.get('paginate', True))
         return new_table
 
 class BaseDatatable(Manager):
+    paginator = None
     def __init__(self, *args, **kwargs):
         super(BaseDatatable, self).__init__()
-        self.keys=['id','features','filters','searches','orderings','pagination','searchable','orderable','paginate','paginator','_state','initial']
+        self.keys=['id','features','filters','searches','order_fields','pagination','paginate','paginator','_state']
         for key in self.keys:
             if not hasattr(self,key):
                 setattr(self,key,None)
+        if self.paginator is None:
+            self.paginator = Paginator
+        if self.paginate is None:
+            self.paginate = True
     def get_query_set(self):
         return DataSet(model=self.model, query=None, using=None,
                         keys=self.keys,
                         **{ key:getattr(self, key) for key in self.keys }
         )
-    def transform(self, **kwargs):
-        return self.get_query_set().transform(**kwargs)
                 
 class Datatable(BaseDatatable):
     __metaclass__ = DatatableMetaclass
@@ -106,29 +130,79 @@ class DataSet(QuerySet):
     ##########
     
     # Modify datatable.state from a dict of options
-    def update_state(self, changes):
-        if changes:
-            print changes
-            print dict(self._state.__dict__, **changes)
-    
-    # Apply pending changes to state
-    def get_transformation(self, **kwargs):
+    def update_state(self, action, target, value):
+        print action, target, value
+        is_different = False
+        if action == 'search':
+            is_different = True
+            if not hasattr(self._state.search_values, target) or value != getattr(self._state.search_values, target, None):
+                self._state.search_values[target] = value
+            else:
+                is_different = False
+                
+        elif action == 'single_filter':
+            is_different = True
+            # IF the filter was set to empty
+            if not value:
+                del self._state.filter_values[target]
+            # IF filter is applied for the first time or the filter isn't currently applied
+            elif not hasattr(self._state.filter_values, target) or value != getattr(self._state.filter_values, target, None):
+                self._state.filter_values[target] = value
+            else:
+                is_different = False
+                
+        elif action == 'multi_filter':
+            is_different = True
+            array = self._state.filter_values[target] if target in self._state.filter_values else []
+            # If already in the array, remove it; or add it if not. (toggles)
+            if value in array: array.remove(value)
+            else: array.append(value)
+            # If array is blank, delete the filter status entirely, else set it.
+            if not array: del self._state.filter_values[target]
+            else: self._state.filter_values[target] = array
+                
+        elif action == 'order':
+            is_different = True
+            if not target in self._state.ordering: self._state.ordering[target] = {}
+            
+            if self._state.ordering[target] == "desc": self._state.ordering = {target:"asc"}
+            elif self._state.ordering[target] == "asc": self._state.ordering = {target:"desc"}
+            else: self._state.ordering = {target:value}
+                
+        elif action == 'per_page':
+            if self._state.per_page != value:
+                self._state.per_page = value
+                is_different = True
+                
+        elif action == 'page':
+            if self._state.page_number != value:
+                self._state.page_number = value
+                is_different = True
+        
+        else:
+            raise AttributeError, "'%s' datatable action is not supported. Refer to nativetables documentation for a list of valid options." % action
+            
+        if not action in ['order', 'page']:
+            self._state.page_number = 1
+            
+        self._state.is_changed = is_different
+        return self
+        
+    def get_transformation(self):
         chain = self._clone()
         if self._state.is_changed:
             if getattr(self,'filters', False):
                 chain = chain.filter_data()
-            if getattr(self,'searchable', False):
+            if getattr(self,'searches', False):
                 chain = chain.search()
-            if getattr(self,'orderable', False):
+            if getattr(self,'order_fields', False):
                 chain = chain.order()
-            if getattr(self,'paginate', False):
-                chain = chain.paginate_data()
         return chain
     
     def filter_data(self):
         filter_args = {}
         for filter_field, selection in self._state.filter_values.iteritems():
-            if filter_field in [f.name for f in self.filters]:
+            if filter_field in [f for f in self.filters]:
                 if isinstance(selection, list):
                     filter_args[filter_field+"__in"]=selection
                 else:
@@ -136,17 +210,34 @@ class DataSet(QuerySet):
         return self.filter(**filter_args) if filter_args else self
         
     def search(self):
-        search_args = { search_field+"__icontains":self._state.search_param for search_field in self.searchable.split() }
+        search_args = {}
+        for search_name, search_param in self._state.search_values.iteritems():
+            if search_name in [s for s in self.searches]:
+                for search_field in self.searches[search_name].search_fields:
+                    search_args[search_field+"__icontains"] = search_param
         return self.filter(**search_args) if search_args else self
         
     def order(self):
         order_args = ""
         for order_field, direction in self._state.ordering.iteritems():
-            order_args = ("-" if direction=="desc" else "")+order_field
+            if order_field in self.order_fields:
+                order_args = ("-" if direction=="desc" else "")+order_field
+        print order_args
         return self.order_by(order_args) if order_args else self
         
     def paginate_data(self):
-        return self.paginator(self, self._state.per_page).page(self._state.page_number) if self.paginate else self
+        # print self.__class__
+        # print self.paginator
+        # print self._state.per_page
+        # print self._state.page_number
+        result = self.paginator(self, self._state.per_page)
+        # print dir(result)
+        # result.object_list.query.add_count_column()
+        print result.object_list.query
+        print result.object_list.query.get_count(using=result.object_list.db) 
+        print result.object_list.count()
+        ret = result.page(self._state.page_number)
+        return ret
             
 
 class DataList(list):

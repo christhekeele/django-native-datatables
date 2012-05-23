@@ -1,5 +1,6 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.views.generic.list import MultipleObjectMixin, ListView
+from django.core.paginator import Page
 
 from django.utils import simplejson
 import re
@@ -12,16 +13,6 @@ class DatatableMixin(object):
     '''
     datatable = None
     context_datatable_name = None
-
-    # def get_tranformation_params(self):
-    #     """
-    #     Return a table object to use. The table has automatic support for
-    #     sorting and pagination.
-    #     """
-    #     if self.request.GET.get('datatable', False):
-    #         return simplejson.loads(self.request.GET['datatable'])
-    #     else:
-    #         return self.datatable._state
 
     def get_queryset(self):
         """
@@ -61,23 +52,39 @@ class DatatableMixin(object):
         """
         queryset = kwargs.pop('object_list')
         context_object_name = self.get_context_object_name(queryset)
-
-        if getattr(queryset,"object_list", False):
-            context = {
-                'paginator': queryset.paginator,
-                'page_obj': queryset,
-                'is_paginated': True,
-                'object_list': queryset.object_list
-            }
-        else:
-            context = {
-                'paginator': None,
-                'page_obj': None,
-                'is_paginated': False,
-                'object_list': queryset
-            }
+        # if queryset.paginate:
+        #     page_obj = queryset.paginate_data()
+        #     context = {
+        #         'paginator': page_obj.paginator,
+        #         'page_obj': page_obj,
+        #         'is_paginated': True,
+        #     }
+        #     object_list = page_obj.object_list
+        #     
+        #     allow_empty = self.get_allow_empty()        
+        #     if not allow_empty:
+        #         # When pagination is enabled and object_list is a queryset,
+        #         # it's better to do a cheap query than to load the unpaginated
+        #         # queryset in memory.
+        #         if (self.get_paginate_by(self.object_list) is not None
+        #             and hasattr(self.object_list, 'exists')):
+        #             is_empty = not self.object_list.exists()
+        #         else:
+        #             is_empty = len(self.object_list) == 0
+        #         if is_empty:
+        #             raise Http404(_(u"Empty list and '%(class_name)s.allow_empty' is False.")
+        #                     % {'class_name': self.__class__.__name__})
+        # else:
+        #     context = {
+        #         'paginator': None,
+        #         'page_obj': None,
+        #         'is_paginated': False,
+        #         'object_list': queryset
+        #     }
+        #     object_list = queryset
+        context={}
         if context_object_name is not None:
-            context[context_object_name] = getattr(queryset,"object_list", queryset)
+            context[context_object_name] = context['object_list'] = queryset# object_list
             
         context.update(kwargs)
         return context
@@ -89,28 +96,17 @@ class DatatableView(DatatableMixin, ListView):
     Generic view that renders a template and passes in a ``Datatable`` object.
     """
     def get(self, request, *args, **kwargs):
-        # Inject untransformed datatable into session if not there already
-        if not hasattr(request.session, 'datatable'):
+        # If this is a page_load, inject a clean datatable into the session
+        if not request.is_ajax():
             request.session['datatable'] = self.get_queryset()
-        # If recieving params, update datatable state
-        if request.GET:
-            request.session['datatable'].update_state(request.GET)
-            
-        self.object_list = request.session['datatable'].get_transformation()
+        # Else, if there are ajax-requested changes in the GET data, update the table's state
+        elif request.GET:
+            # Pop the only table's changes from dict since datatableview only supports one datatable
+            changes = simplejson.loads(request.GET.copy()['datatable_changes']).popitem()[1]
+            request.session['datatable'] = request.session['datatable'].update_state(**changes)
         
-        allow_empty = self.get_allow_empty()
-
-        if not allow_empty:
-            # When pagination is enabled and object_list is a queryset,
-            # it's better to do a cheap query than to load the unpaginated
-            # queryset in memory.
-            if (self.get_paginate_by(self.object_list) is not None
-                and hasattr(self.object_list, 'exists')):
-                is_empty = not self.object_list.exists()
-            else:
-                is_empty = len(self.object_list) == 0
-            if is_empty:
-                raise Http404(_(u"Empty list and '%(class_name)s.allow_empty' is False.")
-                        % {'class_name': self.__class__.__name__})
+        self.object_list = request.session['datatable'].get_transformation()
+        print self.object_list._state.__dict__
+        print self.object_list.query
         context = self.get_context_data(object_list=self.object_list)
         return self.render_to_response(context)

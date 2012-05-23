@@ -1,9 +1,10 @@
 $(document).ready ->
   tables = $('div:data("table")')
+  changes = {}
   for datatable in tables
     $datatable = $(datatable)
     table_name = if $(tables).length > 1 then 'table' else $datatable.data("table")
-    window[table_name] = $datatable.data("table-state")
+    changes[table_name] = {}
         
     for single_filter in $datatable.find(':data("table-single-filter")')
       $(single_filter).find(':data("filter")').live 'click', ->
@@ -14,7 +15,7 @@ $(document).ready ->
         update_table table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), $(this).data('filter')
     
     $datatable.find(':data("table-search")').live 'keyup', ->
-      update_table table_name, 'search', false, $(this).val()
+      update_table table_name, 'search', $(this).data('table-search'), $(this).val()
         
     $datatable.find(':data("table-order")').live 'click', ->
       default_order = 'asc'
@@ -36,48 +37,16 @@ $(document).ready ->
     
   update_table = (table_name, action, target, value) ->
     console.log table_name, action, target, value
-    if action == 'search'
-      window[table_name].search_param = value
-      window[table_name].page_number = 1
-      
-    if action == 'single_filter'
-      if window[table_name].filter_values?[target] != value
-        window[table_name].filter_values[target] = value
-      if not window[table_name].filter_values[target] then delete window[table_name].filter_values[target]
-      window[table_name].page_number = 1
-    
-    if action == 'multi_filter'
-      array = window[table_name].filter_values?[target] ?= []
-      if value
-        if value in array then array.splice(array.indexOf(value), 1) else array.push(value)
-        if not array.length then delete window[table_name].filter_values[target]
-      window[table_name].page_number = 1
-      
-    if action == 'order'
-      if window[table_name].ordering?[target] == "desc"
-        window[table_name].ordering = {}
-        window[table_name].ordering[target] = "asc"
-      else if window[table_name].ordering?[target] == "asc"
-        window[table_name].ordering = {}
-        window[table_name].ordering[target] = "desc"
-      else
-        window[table_name].ordering = {}
-        window[table_name].ordering[target] = value
-      
-    if action == 'per_page'
-      window[table_name].per_page = value
-      window[table_name].page_number = 1
-      
-    if action == 'page'
-      window[table_name].page_number = value
-    
+    changes[table_name]?['action']=action
+    changes[table_name]?['target']=target
+    changes[table_name]?['value']=value
     $.ajax
       url: ""
       type: "GET"
       datatype: "html"
       contentType: "application/json"
       data: 
-        datatable: JSON.stringify window[table_name]
+        datatable_changes: JSON.stringify changes
       success: (data) ->
         table_body=$datatable.find(':data("table-content='+table_name+'")')
         table_body.html( $(data).find(':data("table-content='+table_name+'")').children() )

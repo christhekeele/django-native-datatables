@@ -9,6 +9,7 @@ from django.utils.safestring import mark_safe
 class BaseFeature(StrAndUnicode):
     "A base class used to identify Feature instances"
     creation_counter = 0
+    name = None
     label=None
     default_template = None
     template = None
@@ -18,6 +19,7 @@ class BaseFeature(StrAndUnicode):
         self.label = kwargs.get('label',None)
         # Increase the creation counter, and save our local copy.
         self.creation_counter = BaseFeature.creation_counter
+        self.context = {}
         BaseFeature.creation_counter += 1
 
     def __cmp__(self, other):
@@ -37,7 +39,6 @@ class BaseFeature(StrAndUnicode):
 
 class BaseFilter(BaseFeature):
     choices = None
-    name = None
     "A base class used to identify Filter instances"
     def __init__(self, **kwargs):
         super(BaseFilter, self).__init__(**kwargs)
@@ -99,4 +100,16 @@ class MultiSelectModelFilter(BaseModelFilter):
     def __init__(self, **kwargs):
         super(MultiSelectModelFilter, self).__init__(**kwargs)
         self.default_template = 'multi_select_filter.html'
+        self.template = kwargs.get('template', self.default_template)
+
+class BaseSearch(BaseFeature):
+    search_fields = None
+    def __init__(self, **kwargs):
+        super(BaseSearch, self).__init__(**kwargs)
+        self.search_fields = kwargs.get('search_fields', None)
+        
+class Search(BaseSearch):
+    def __init__(self, **kwargs):
+        super(Search, self).__init__(**kwargs)
+        self.default_template = 'search.html'
         self.template = kwargs.get('template', self.default_template)
