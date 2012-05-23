@@ -1,4 +1,5 @@
 from bisect import bisect
+import sys
 from collections import OrderedDict
 import inspect 
 from .features import BaseFeature, BaseFilter, BaseSearch
@@ -31,13 +32,55 @@ class DatatableState(object):
         # self.widgets = getattr(options, 'widgets', None)
     
 class DatatableMetaclass(type):
-    def __new__(cls, name, bases, attrs):
-        # super_new = super(ModelBase, cls).__new__
-        # parents = [b for b in bases if isinstance(b, Datatable)]
-        # if not parents:
-        #     # If this isn't a subclass of Datatable, don't do anything special.
-        #     return super_new(cls, name, bases, attrs)
+    
+    def add_to_class(cls, name, value):
+        if hasattr(value, 'contribute_to_class'):
+            value.contribute_to_class(cls, name)
+        else:
+            setattr(cls, name, value)
             
+    def __new__(cls, name, bases, attrs):
+        super_new = super(DatatableMetaclass, cls).__new__
+        parents = [b for b in bases if isinstance(b, DatatableMetaclass)]
+        print bases, parents
+        if not parents:
+            # If this isn't a subclass of Datatable, don't do anything special.
+            return super_new(cls, name, bases, attrs)
+        
+        # Create the class.
+        module = attrs.pop('__module__')
+        new_class = super_new(cls, name, bases, {'__module__': module})
+        
+        meta = attrs.pop('Meta', None)
+        base_meta = getattr(new_class, '_meta', None)
+        print meta, base_meta
+        
+        if getattr(meta, 'app_label', None) is None:
+            # Figure out the app_label by looking one level up.
+            # For 'django.contrib.sites.models', this would be 'sites'.
+            model_module = sys.modules[new_class.__module__]
+            kwargs = {"app_label": model_module.__name__.split('.')[-2]}
+        else:
+            kwargs = {}
+            
+        new_class.add_to_class('_meta', DatatableOptions(meta, **kwargs))
+        new_class.add_to_class('_meta', DatatableOptions(meta, **kwargs))
+        
+        if getattr(meta, 'app_label', None) is None:
+            # Figure out the app_label by looking one level up.
+            # For 'django.contrib.sites.models', this would be 'sites'.
+            model_module = sys.modules[new_class.__module__]
+            kwargs = {"app_label": model_module.__name__.split('.')[-2]}
+        else:
+            kwargs = {}
+            
+        state = attrs.pop('Initial', None)
+        base_state = getattr(new_class, '_state', None)
+        new_class.add_to_class('_meta', DatatableState(state, **kwargs))
+        new_class.add_to_class('_meta', DatatableState(state, **kwargs))
+        
+        print new_class._meta.__dict__
+        
         # If this isn't a subclass of Widget, don't do anything special.
         # try:
         #     if not filter(lambda b: issubclass(b, Datatable), bases):
@@ -49,7 +92,7 @@ class DatatableMetaclass(type):
             
         # print attrs
         
-        new_table = super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
+        # new_table = super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
         features = attrs.get('features', FeatureDict({}))
         filters = attrs.get('filters', FeatureDict({}))
         searches = attrs.get('searches', FeatureDict({}))
@@ -63,15 +106,38 @@ class DatatableMetaclass(type):
                 if isinstance(attr, BaseSearch):
                     searches[key] = attr
 
-        new_table.features=features
-        new_table.filters=filters
-        new_table.searches=searches
-        new_table._meta = DatatableOptions(getattr(new_table, 'Meta', None))
-        new_table._state = DatatableState(state=getattr(new_table, 'Initial', None), paginate=attrs.get('paginate', True))
-        return new_table
+        new_class.features=features
+        new_class.filters=filters
+        new_class.searches=searches
+        # new_class._meta = DatatableOptions(getattr(new_table, 'Meta', None))
+        # print new_class._meta.__dict__
+        # print new_class.filters.popitem()
+        # new_class._state = DatatableState(state=getattr(new_class, 'Initial', None), paginate=attrs.get('paginate', True))
+        return new_class
 
-class BaseDatatable(Manager):
+# class BaseDatatable(Manager):
+#     paginator = None
+#     def __init__(self, *args, **kwargs):
+#         super(BaseDatatable, self).__init__()
+#         self.keys=['id','features','filters','searches','order_fields','pagination','paginate','paginator','_state']
+#         for key in self.keys:
+#             if not hasattr(self,key):
+#                 setattr(self,key,None)
+#         if self.paginator is None:
+#             self.paginator = Paginator
+#         if self.paginate is None:
+#             self.paginate = True
+#     def get_query_set(self):
+#         return DataSet(model=self.model, query=None, using=None,
+#                         keys=self.keys,
+#                         **{ key:getattr(self, key) for key in self.keys }
+#         )
+                
+# class Datatable(BaseDatatable):
+class Datatable(Manager):
+    __metaclass__ = DatatableMetaclass
     paginator = None
+    
     def __init__(self, *args, **kwargs):
         super(BaseDatatable, self).__init__()
         self.keys=['id','features','filters','searches','order_fields','pagination','paginate','paginator','_state']
@@ -82,14 +148,12 @@ class BaseDatatable(Manager):
             self.paginator = Paginator
         if self.paginate is None:
             self.paginate = True
+            
     def get_query_set(self):
         return DataSet(model=self.model, query=None, using=None,
                         keys=self.keys,
                         **{ key:getattr(self, key) for key in self.keys }
         )
-                
-class Datatable(BaseDatatable):
-    __metaclass__ = DatatableMetaclass
     def __init__(self, *args, **kwargs):
         super(Datatable, self).__init__()
         # Pin Datatable to associated model

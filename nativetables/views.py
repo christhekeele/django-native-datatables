@@ -52,39 +52,39 @@ class DatatableMixin(object):
         """
         queryset = kwargs.pop('object_list')
         context_object_name = self.get_context_object_name(queryset)
-        # if queryset.paginate:
-        #     page_obj = queryset.paginate_data()
-        #     context = {
-        #         'paginator': page_obj.paginator,
-        #         'page_obj': page_obj,
-        #         'is_paginated': True,
-        #     }
-        #     object_list = page_obj.object_list
-        #     
-        #     allow_empty = self.get_allow_empty()        
-        #     if not allow_empty:
-        #         # When pagination is enabled and object_list is a queryset,
-        #         # it's better to do a cheap query than to load the unpaginated
-        #         # queryset in memory.
-        #         if (self.get_paginate_by(self.object_list) is not None
-        #             and hasattr(self.object_list, 'exists')):
-        #             is_empty = not self.object_list.exists()
-        #         else:
-        #             is_empty = len(self.object_list) == 0
-        #         if is_empty:
-        #             raise Http404(_(u"Empty list and '%(class_name)s.allow_empty' is False.")
-        #                     % {'class_name': self.__class__.__name__})
-        # else:
-        #     context = {
-        #         'paginator': None,
-        #         'page_obj': None,
-        #         'is_paginated': False,
-        #         'object_list': queryset
-        #     }
-        #     object_list = queryset
-        context={}
+        if queryset.paginate:
+            page_obj = queryset.paginate_data()
+            context = {
+                'paginator': page_obj.paginator,
+                'page_obj': page_obj,
+                'is_paginated': True,
+            }
+            object_list = page_obj.object_list
+            
+            allow_empty = self.get_allow_empty()        
+            if not allow_empty:
+                # When pagination is enabled and object_list is a queryset,
+                # it's better to do a cheap query than to load the unpaginated
+                # queryset in memory.
+                if (self.get_paginate_by(self.object_list) is not None
+                    and hasattr(self.object_list, 'exists')):
+                    is_empty = not self.object_list.exists()
+                else:
+                    is_empty = len(self.object_list) == 0
+                if is_empty:
+                    raise Http404(_(u"Empty list and '%(class_name)s.allow_empty' is False.")
+                            % {'class_name': self.__class__.__name__})
+        else:
+            context = {
+                'paginator': None,
+                'page_obj': None,
+                'is_paginated': False,
+                'object_list': queryset
+            }
+            object_list = queryset
+
         if context_object_name is not None:
-            context[context_object_name] = context['object_list'] = queryset# object_list
+            context[context_object_name] = context['object_list'] = object_list
             
         context.update(kwargs)
         return context
