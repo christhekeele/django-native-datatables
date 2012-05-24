@@ -32,67 +32,26 @@ class DatatableState(object):
         # self.widgets = getattr(options, 'widgets', None)
     
 class DatatableMetaclass(type):
-    
-    def add_to_class(cls, name, value):
-        if hasattr(value, 'contribute_to_class'):
-            value.contribute_to_class(cls, name)
-        else:
-            setattr(cls, name, value)
-            
     def __new__(cls, name, bases, attrs):
         super_new = super(DatatableMetaclass, cls).__new__
         parents = [b for b in bases if isinstance(b, DatatableMetaclass)]
-        print bases, parents
         if not parents:
+            print "Sub"
             # If this isn't a subclass of Datatable, don't do anything special.
+            # print super_new(cls, name, bases, attrs)
             return super_new(cls, name, bases, attrs)
         
         # Create the class.
         module = attrs.pop('__module__')
         new_class = super_new(cls, name, bases, {'__module__': module})
         
-        meta = attrs.pop('Meta', None)
-        base_meta = getattr(new_class, '_meta', None)
-        print meta, base_meta
+        attr_meta = attrs.pop('Meta', None)
+        new_class._meta=DatatableOptions(attr_meta)
         
-        if getattr(meta, 'app_label', None) is None:
-            # Figure out the app_label by looking one level up.
-            # For 'django.contrib.sites.models', this would be 'sites'.
-            model_module = sys.modules[new_class.__module__]
-            kwargs = {"app_label": model_module.__name__.split('.')[-2]}
-        else:
-            kwargs = {}
-            
-        new_class.add_to_class('_meta', DatatableOptions(meta, **kwargs))
-        new_class.add_to_class('_meta', DatatableOptions(meta, **kwargs))
+        attr_state = attrs.pop('Initial', None)
+        attr_paginate = attrs.pop('paginate', True)
+        new_class._state=DatatableState(state=attr_state, paginate=attr_paginate)
         
-        if getattr(meta, 'app_label', None) is None:
-            # Figure out the app_label by looking one level up.
-            # For 'django.contrib.sites.models', this would be 'sites'.
-            model_module = sys.modules[new_class.__module__]
-            kwargs = {"app_label": model_module.__name__.split('.')[-2]}
-        else:
-            kwargs = {}
-            
-        state = attrs.pop('Initial', None)
-        base_state = getattr(new_class, '_state', None)
-        new_class.add_to_class('_meta', DatatableState(state, **kwargs))
-        new_class.add_to_class('_meta', DatatableState(state, **kwargs))
-        
-        print new_class._meta.__dict__
-        
-        # If this isn't a subclass of Widget, don't do anything special.
-        # try:
-        #     if not filter(lambda b: issubclass(b, Datatable), bases):
-        #         return super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
-        # except NameError:
-        #     # 'Widget' isn't defined yet, meaning we're looking at our own
-        #     # Widget class, defined below.
-        #     return super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
-            
-        # print attrs
-        
-        # new_table = super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
         features = attrs.get('features', FeatureDict({}))
         filters = attrs.get('filters', FeatureDict({}))
         searches = attrs.get('searches', FeatureDict({}))
@@ -105,41 +64,18 @@ class DatatableMetaclass(type):
                     filters[key] = attr
                 if isinstance(attr, BaseSearch):
                     searches[key] = attr
-
+        
         new_class.features=features
         new_class.filters=filters
         new_class.searches=searches
-        # new_class._meta = DatatableOptions(getattr(new_table, 'Meta', None))
-        # print new_class._meta.__dict__
-        # print new_class.filters.popitem()
-        # new_class._state = DatatableState(state=getattr(new_class, 'Initial', None), paginate=attrs.get('paginate', True))
         return new_class
-
-# class BaseDatatable(Manager):
-#     paginator = None
-#     def __init__(self, *args, **kwargs):
-#         super(BaseDatatable, self).__init__()
-#         self.keys=['id','features','filters','searches','order_fields','pagination','paginate','paginator','_state']
-#         for key in self.keys:
-#             if not hasattr(self,key):
-#                 setattr(self,key,None)
-#         if self.paginator is None:
-#             self.paginator = Paginator
-#         if self.paginate is None:
-#             self.paginate = True
-#     def get_query_set(self):
-#         return DataSet(model=self.model, query=None, using=None,
-#                         keys=self.keys,
-#                         **{ key:getattr(self, key) for key in self.keys }
-#         )
-                
-# class Datatable(BaseDatatable):
+        
 class Datatable(Manager):
     __metaclass__ = DatatableMetaclass
     paginator = None
     
     def __init__(self, *args, **kwargs):
-        super(BaseDatatable, self).__init__()
+        super(Datatable, self).__init__()
         self.keys=['id','features','filters','searches','order_fields','pagination','paginate','paginator','_state']
         for key in self.keys:
             if not hasattr(self,key):
@@ -149,17 +85,16 @@ class Datatable(Manager):
         if self.paginate is None:
             self.paginate = True
             
+        # Pin Datatable to associated model
+        self._meta.model.add_to_class(self._meta.name, self)
+        # Give datatable model info for abstraction
+        self.model = self._meta.model
+            
     def get_query_set(self):
         return DataSet(model=self.model, query=None, using=None,
                         keys=self.keys,
                         **{ key:getattr(self, key) for key in self.keys }
         )
-    def __init__(self, *args, **kwargs):
-        super(Datatable, self).__init__()
-        # Pin Datatable to associated model
-        self._meta.model.add_to_class(self._meta.name, self)
-        # Give datatable model info for abstraction
-        self.model = self._meta.model
         
 class DataSet(QuerySet):
     ##########
@@ -199,7 +134,8 @@ class DataSet(QuerySet):
         is_different = False
         if action == 'search':
             is_different = True
-            if not hasattr(self._state.search_values, target) or value != getattr(self._state.search_values, target, None):
+            if target in self._state.search_values: del self._state.search_values[target]
+            elif not hasattr(self._state.search_values, target) or value != getattr(self._state.search_values, target, None):
                 self._state.search_values[target] = value
             else:
                 is_different = False
@@ -207,8 +143,7 @@ class DataSet(QuerySet):
         elif action == 'single_filter':
             is_different = True
             # IF the filter was set to empty
-            if not value:
-                del self._state.filter_values[target]
+            if target in self._state.filter_values: del self._state.filter_values[target]
             # IF filter is applied for the first time or the filter isn't currently applied
             elif not hasattr(self._state.filter_values, target) or value != getattr(self._state.filter_values, target, None):
                 self._state.filter_values[target] = value
@@ -222,7 +157,7 @@ class DataSet(QuerySet):
             if value in array: array.remove(value)
             else: array.append(value)
             # If array is blank, delete the filter status entirely, else set it.
-            if not array: del self._state.filter_values[target]
+            if target in self._state.filter_values: del self._state.filter_values[target]
             else: self._state.filter_values[target] = array
                 
         elif action == 'order':

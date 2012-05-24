@@ -75,7 +75,7 @@ class BaseModelFilter(BaseFilter):
         if self.name_field:
             self.choices = { item.id : getattr(item, self.name_field) for item in self.filter_list.only('id',self.name_field) }
         else:
-            self.choices = { item.id : item for item in self.filter_list.only('id') }
+            self.choices = { item.id : item for item in self.filter_list.only('pk') }
         self.context = dict(choices=self.choices)
 
 class SingleModelFilter(BaseModelFilter):
