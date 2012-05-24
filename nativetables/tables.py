@@ -3,7 +3,7 @@ import sys
 from collections import OrderedDict
 import inspect 
 from .features import BaseFeature, BaseFilter, BaseSearch
-from django.db.models import Manager
+from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 from django.core.paginator import Paginator
 from django.utils.encoding import smart_unicode
@@ -195,12 +195,18 @@ class DataSet(QuerySet):
         return self.filter(**filter_args) if filter_args else self
         
     def search(self):
-        search_args = {}
+        queries = []
         for search_name, search_param in self._state.search_values.iteritems():
             if search_name in [s for s in self.searches]:
                 for search_field in self.searches[search_name].search_fields:
-                    search_args[search_field+"__icontains"] = search_param
-        return self.filter(**search_args) if search_args else self
+                    queries.append( Q(**{search_field+"__icontains"  : search_param}) )
+        if queries:
+            search_args = queries.pop()
+            for query in queries:
+                search_args |= query
+            return self.filter(search_args)
+        else:
+            return self
         
     def order(self):
         order_args = ""
