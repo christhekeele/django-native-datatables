@@ -25,7 +25,8 @@ $(document).ready ->
         $(this).addClass(default_order)
       else
         $(this).toggleClass("asc desc")
-      update_table table_name, 'order', $(this).data('table-order'), default_order
+      order = if $(this).hasClass('asc') then "asc" else "desc"
+      update_table table_name, 'order', $(this).data('table-order'), order
     
     for paginate in $datatable.find(':data("table-paginate")')
       

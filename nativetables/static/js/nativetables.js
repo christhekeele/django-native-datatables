@@ -28,7 +28,7 @@
         return update_table(table_name, 'search', $(this).data('table-search'), $(this).val());
       });
       $datatable.find(':data("table-order")').live('click', function() {
-        var default_order;
+        var default_order, order;
         default_order = 'asc';
         $(this).parent().children(':data("table-order")').removeClass('active');
         $(this).addClass('active');
@@ -37,7 +37,8 @@
         } else {
           $(this).toggleClass("asc desc");
         }
-        return update_table(table_name, 'order', $(this).data('table-order'), default_order);
+        order = $(this).hasClass('asc') ? "asc" : "desc";
+        return update_table(table_name, 'order', $(this).data('table-order'), order);
       });
       _ref2 = $datatable.find(':data("table-paginate")');
       for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {

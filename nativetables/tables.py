@@ -27,16 +27,12 @@ class DatatableState(object):
             self.page_number = getattr(state, 'page_number', 1)
             self.per_page = getattr(state, 'per_page', 20)
         self.is_changed = True
-        # self.fields = getattr(options, 'fields', None)
-        # self.exclude = getattr(options, 'exclude', None)
-        # self.widgets = getattr(options, 'widgets', None)
     
 class DatatableMetaclass(type):
     def __new__(cls, name, bases, attrs):
         super_new = super(DatatableMetaclass, cls).__new__
         parents = [b for b in bases if isinstance(b, DatatableMetaclass)]
         if not parents:
-            print "Sub"
             # If this isn't a subclass of Datatable, don't do anything special.
             # print super_new(cls, name, bases, attrs)
             return super_new(cls, name, bases, attrs)
@@ -68,6 +64,7 @@ class DatatableMetaclass(type):
         new_class.features=features
         new_class.filters=filters
         new_class.searches=searches
+        new_class.order_fields = attrs.get('order_fields',None)
         return new_class
         
 class Datatable(Manager):
@@ -84,6 +81,8 @@ class Datatable(Manager):
             self.paginator = Paginator
         if self.paginate is None:
             self.paginate = True
+        if self.order_fields is None:
+            self.order_fields = []
             
         # Pin Datatable to associated model
         self._meta.model.add_to_class(self._meta.name, self)
@@ -131,37 +130,28 @@ class DataSet(QuerySet):
     # Modify datatable.state from a dict of options
     def update_state(self, action, target, value):
         print action, target, value
-        is_different = False
         if action == 'search':
-            is_different = True
-            if target in self._state.search_values: del self._state.search_values[target]
+            if target in self._state.search_values and not value: del self._state.search_values[target]
             elif not hasattr(self._state.search_values, target) or value != getattr(self._state.search_values, target, None):
                 self._state.search_values[target] = value
-            else:
-                is_different = False
                 
         elif action == 'single_filter':
-            is_different = True
             # IF the filter was set to empty
-            if target in self._state.filter_values: del self._state.filter_values[target]
+            if target in self._state.filter_values and not value: del self._state.filter_values[target]
             # IF filter is applied for the first time or the filter isn't currently applied
             elif not hasattr(self._state.filter_values, target) or value != getattr(self._state.filter_values, target, None):
                 self._state.filter_values[target] = value
-            else:
-                is_different = False
                 
         elif action == 'multi_filter':
-            is_different = True
             array = self._state.filter_values[target] if target in self._state.filter_values else []
             # If already in the array, remove it; or add it if not. (toggles)
             if value in array: array.remove(value)
             else: array.append(value)
             # If array is blank, delete the filter status entirely, else set it.
-            if target in self._state.filter_values: del self._state.filter_values[target]
+            if target in self._state.filter_values and not value: del self._state.filter_values[target]
             else: self._state.filter_values[target] = array
                 
         elif action == 'order':
-            is_different = True
             if not target in self._state.ordering: self._state.ordering[target] = {}
             
             if self._state.ordering[target] == "desc": self._state.ordering = {target:"asc"}
@@ -171,12 +161,10 @@ class DataSet(QuerySet):
         elif action == 'per_page':
             if self._state.per_page != value:
                 self._state.per_page = value
-                is_different = True
                 
         elif action == 'page':
             if self._state.page_number != value:
                 self._state.page_number = value
-                is_different = True
         
         else:
             raise AttributeError, "'%s' datatable action is not supported. Refer to nativetables documentation for a list of valid options." % action
@@ -184,18 +172,16 @@ class DataSet(QuerySet):
         if not action in ['order', 'page']:
             self._state.page_number = 1
             
-        self._state.is_changed = is_different
         return self
         
     def get_transformation(self):
         chain = self._clone()
-        if self._state.is_changed:
-            if getattr(self,'filters', False):
-                chain = chain.filter_data()
-            if getattr(self,'searches', False):
-                chain = chain.search()
-            if getattr(self,'order_fields', False):
-                chain = chain.order()
+        if getattr(self,'filters', False):
+            chain = chain.filter_data()
+        if getattr(self,'searches', False):
+            chain = chain.search()
+        if getattr(self,'order_fields', False):
+            chain = chain.order()
         return chain
     
     def filter_data(self):
@@ -221,22 +207,10 @@ class DataSet(QuerySet):
         for order_field, direction in self._state.ordering.iteritems():
             if order_field in self.order_fields:
                 order_args = ("-" if direction=="desc" else "")+order_field
-        print order_args
         return self.order_by(order_args) if order_args else self
         
     def paginate_data(self):
-        # print self.__class__
-        # print self.paginator
-        # print self._state.per_page
-        # print self._state.page_number
-        result = self.paginator(self, self._state.per_page)
-        # print dir(result)
-        # result.object_list.query.add_count_column()
-        print result.object_list.query
-        print result.object_list.query.get_count(using=result.object_list.db) 
-        print result.object_list.count()
-        ret = result.page(self._state.page_number)
-        return ret
+        return self.paginator(self, self._state.per_page).page(self._state.page_number)
             
 
 class DataList(list):

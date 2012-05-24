@@ -106,7 +106,6 @@ class DatatableView(DatatableMixin, ListView):
             request.session['datatable'] = request.session['datatable'].update_state(**changes)
         
         self.object_list = request.session['datatable'].get_transformation()
-        print self.object_list._state.__dict__
-        print self.object_list.query
+        
         context = self.get_context_data(object_list=self.object_list)
         return self.render_to_response(context)
