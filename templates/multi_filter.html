@@ -1,0 +1,6 @@
+<div class="btn-group" data-toggle="buttons" data-table-multi-filter="{{name}}">
+  {% for id, title in choices.iteritems %}
+    <a title="Sort by {{title}}" class="btn btn-small" data-filter={{id}}>{{title}}</a>
+  {% endfor %}
+  <a title="Sort by {{label}}" data-filter-header class="btn btn-primary btn-small">{{label}}</a>
+</div>
