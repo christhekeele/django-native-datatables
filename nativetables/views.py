@@ -28,10 +28,10 @@ class DatatableMixin(object):
                                        u"%(cls)s.datatable"
                                        % {"cls": type(self).__name__})
         # Give datatable id so it can be referenced in html DOM elements
-        datatable_instance.id = self.get_context_object_name(datatable_instance)
+        datatable_instance.id = self.get_context_datatable_name(datatable_instance)
         return datatable_instance.all()
 
-    def get_context_object_name(self, queryset):
+    def get_context_datatable_name(self, queryset):
         """
         Get the name to use for the table's template variable.
         If not provided, use underscored version of datatable class name
@@ -51,7 +51,7 @@ class DatatableMixin(object):
         Get the context for this view.
         """
         queryset = kwargs.pop('object_list')
-        context_object_name = self.get_context_object_name(queryset)
+        context_datatable_name = self.get_context_datatable_name(queryset)
         if queryset.paginate:
             page_obj = queryset.paginate_data()
             context = {
@@ -83,8 +83,8 @@ class DatatableMixin(object):
             }
             object_list = queryset
 
-        if context_object_name is not None:
-            context[context_object_name] = context['object_list'] = object_list
+        if context_datatable_name is not None:
+            context[context_datatable_name] = context['object_list'] = object_list
             
         context.update(kwargs)
         return context
