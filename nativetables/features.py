@@ -42,6 +42,16 @@ class BaseFilter(BaseFeature):
     "A base class used to identify Filter instances"
     def __init__(self, **kwargs):
         super(BaseFilter, self).__init__(**kwargs)
+
+class BooleanFilter(BaseFilter):
+    true_label = None
+    false_label = None
+    def __init__(self, **kwargs):
+        super(BooleanFilter, self).__init__(**kwargs)
+        self.context['true_label'] = self.true_label = kwargs.get('true_label', 'True')
+        self.context['false_label'] = self.false_label = kwargs.get('false_label', 'False')
+        self.default_template = 'bool_filter.html'
+        self.template = kwargs.get('template', self.default_template)
         
 class BaseModelFilter(BaseFilter):
     '''A Feature that filters model instances against a developer-provided model property pointing to another table'''

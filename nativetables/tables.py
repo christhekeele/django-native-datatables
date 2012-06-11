@@ -8,6 +8,7 @@ from django.db.models.query import QuerySet
 from django.core.paginator import Paginator
 from django.utils.encoding import smart_unicode
 from django.utils.safestring import mark_safe
+from django.utils.datastructures import SortedDict
 
 class FeatureDict(OrderedDict):
     def __unicode__(self):
@@ -21,12 +22,27 @@ class DatatableOptions(object):
 class DatatableState(object):
     def __init__(self, state, paginate):
         self.search_values = getattr(state, 'search_values', {})
-        self.filter_values = getattr(state, 'filter_values', {})
+        self.filter_values = getattr(state, 'filter_values', {'active':True})
         self.ordering = getattr(state, 'ordering', {})
         if paginate:
             self.page_number = getattr(state, 'page_number', 1)
             self.per_page = getattr(state, 'per_page', 20)
         self.is_changed = True
+    
+def get_declared_features(bases, attrs, with_base_features=True):
+    features = [(feature_name, attrs.pop(feature_name)) for feature_name, obj in attrs.items() if isinstance(obj, BaseFeature)]
+    features.sort(key=lambda x: x[1].creation_counter)
+
+    if with_base_features:
+        for base in bases[::-1]:
+            if hasattr(base, 'base_features'):
+                features = base.base_features.items() + features
+    else:
+        for base in bases[::-1]:
+            if hasattr(base, 'declared_features'):
+                features = base.declared_features.items() + features
+
+    return SortedDict(features)
     
 class DatatableMetaclass(type):
     def __new__(cls, name, bases, attrs):
@@ -34,12 +50,14 @@ class DatatableMetaclass(type):
         parents = [b for b in bases if isinstance(b, DatatableMetaclass)]
         if not parents:
             # If this isn't a subclass of Datatable, don't do anything special.
-            # print super_new(cls, name, bases, attrs)
             return super_new(cls, name, bases, attrs)
         
-        # Create the class.
-        module = attrs.pop('__module__')
-        new_class = super_new(cls, name, bases, {'__module__': module})
+        # Get features from parent classes
+        attrs['base_features']=get_declared_features(bases, attrs)
+        # Add them in while mantaining 'base_features' for iteration
+        attrs = dict(attrs, **attrs['base_features'])
+        # Create the class w/attrs
+        new_class = super(DatatableMetaclass, cls).__new__(cls, name, bases, attrs)
         
         attr_meta = attrs.pop('Meta', None)
         new_class._meta=DatatableOptions(attr_meta)
@@ -129,18 +147,20 @@ class DataSet(QuerySet):
     
     # Modify datatable.state from a dict of options
     def update_state(self, action, target, value):
-        print action, target, value
+        # print action, target, value
         if action == 'search':
             if target in self._state.search_values and not value: del self._state.search_values[target]
             elif not hasattr(self._state.search_values, target) or value != getattr(self._state.search_values, target, None):
                 self._state.search_values[target] = value
                 
         elif action == 'single_filter':
+            # Deal with boolean filters
+            if value == 'True': value = True
+            elif value == 'False': value = False
             # IF the filter was set to empty
-            if target in self._state.filter_values and not value: del self._state.filter_values[target]
+            if target in self._state.filter_values and value is None: del self._state.filter_values[target]
             # IF filter is applied for the first time or the filter isn't currently applied
-            elif not hasattr(self._state.filter_values, target) or value != getattr(self._state.filter_values, target, None):
-                self._state.filter_values[target] = value
+            elif not target in self._state.filter_values or value != getattr(self._state.filter_values, target, None): self._state.filter_values[target] = value
                 
         elif action == 'multi_filter':
             array = self._state.filter_values[target] if target in self._state.filter_values else []
@@ -148,7 +168,7 @@ class DataSet(QuerySet):
             if value in array: array.remove(value)
             else: array.append(value)
             # If array is blank, delete the filter status entirely, else set it.
-            if target in self._state.filter_values and not value: del self._state.filter_values[target]
+            if target in self._state.filter_values and not value is None: del self._state.filter_values[target]
             else: self._state.filter_values[target] = array
                 
         elif action == 'order':
@@ -187,7 +207,7 @@ class DataSet(QuerySet):
     def filter_data(self):
         filter_args = {}
         for filter_field, selection in self._state.filter_values.iteritems():
-            if filter_field in [f for f in self.filters]:
+            if filter_field in [f for f in self.filters] and not selection is None:
                 if isinstance(selection, list):
                     filter_args[filter_field+"__in"]=selection
                 else:

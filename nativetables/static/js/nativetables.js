@@ -14,7 +14,7 @@
       for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
         single_filter = _ref[_j];
         $(single_filter).find(':data("filter")').live('click', function() {
-          return update_table(table_name, 'single_filter', $(this).parent().data('table-single-filter'), $(this).data('filter'));
+          return update_table(table_name, 'single_filter', $(this).parent().data('table-single-filter'), $(this).data('filter') || null);
         });
       }
       _ref1 = $datatable.find(':data("table-multi-filter")');

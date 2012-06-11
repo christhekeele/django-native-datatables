@@ -8,7 +8,7 @@ $(document).ready ->
         
     for single_filter in $datatable.find(':data("table-single-filter")')
       $(single_filter).find(':data("filter")').live 'click', ->
-        update_table table_name, 'single_filter', $(this).parent().data('table-single-filter'), $(this).data('filter')
+        update_table table_name, 'single_filter', $(this).parent().data('table-single-filter'), $(this).data('filter') or null
     
     for multi_filter in $datatable.find(':data("table-multi-filter")')
       $(multi_filter).find(':data("filter")').live 'click', ->

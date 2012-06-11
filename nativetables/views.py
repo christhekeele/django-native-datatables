@@ -97,8 +97,7 @@ class DatatableView(DatatableMixin, ListView):
     """
     def get(self, request, *args, **kwargs):
         # If this is a page_load, inject a clean datatable into the session
-        if not request.is_ajax():
-            request.session['datatable'] = self.get_queryset()
+        if not request.is_ajax(): request.session['datatable'] = self.get_queryset()
         # Else, if there are ajax-requested changes in the GET data, update the table's state
         elif request.GET:
             # Pop the only table's changes from dict since datatableview only supports one datatable
