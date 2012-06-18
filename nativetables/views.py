@@ -91,19 +91,34 @@ class DatatableMixin(object):
         
         # return super(DatatableMixin, self).get_context_data(**context)
        
+       
+from base.helpers.django_utils import get_current_user
+from company.models import Employee
 class DatatableView(DatatableMixin, ListView):
     """
     Generic view that renders a template and passes in a ``Datatable`` object.
     """
     def get(self, request, *args, **kwargs):
         # If this is a page_load, inject a clean datatable into the session
-        if not request.is_ajax(): request.session['datatable'] = self.get_queryset()
+        if not request.is_ajax():
+            request.session['datatable'] = self.get_queryset()
+            current_user = get_current_user()
+            if not current_user.is_superuser:
+                request.session['datatable']._state.filter_values['representative__employee'] = Employee.objects.get(user=current_user)
+            else:
+                request.session['datatable']._state.filter_values['representative__employee'] = None
         # Else, if there are ajax-requested changes in the GET data, update the table's state
         elif request.GET:
             # Pop the only table's changes from dict since datatableview only supports one datatable
             changes = simplejson.loads(request.GET.copy()['datatable_changes']).popitem()[1]
             request.session['datatable'] = request.session['datatable'].update_state(**changes)
-        
+            if 'representative__employee' not in request.session['datatable']._state.filter_values:
+                current_user = get_current_user()
+                if not current_user.is_superuser:
+                    request.session['datatable']._state.filter_values['representative__employee'] = Employee.objects.get(user=current_user)
+                else:
+                    request.session['datatable']._state.filter_values['representative__employee'] = None
+
         self.object_list = request.session['datatable'].get_transformation()
         
         context = self.get_context_data(object_list=self.object_list)

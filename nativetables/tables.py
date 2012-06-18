@@ -163,13 +163,8 @@ class DataSet(QuerySet):
             elif not target in self._state.filter_values or value != getattr(self._state.filter_values, target, None): self._state.filter_values[target] = value
                 
         elif action == 'multi_filter':
-            array = self._state.filter_values[target] if target in self._state.filter_values else []
-            # If already in the array, remove it; or add it if not. (toggles)
-            if value in array: array.remove(value)
-            else: array.append(value)
-            # If array is blank, delete the filter status entirely, else set it.
-            if target in self._state.filter_values and not value is None: del self._state.filter_values[target]
-            else: self._state.filter_values[target] = array
+            if target in self._state.filter_values and value is None: del self._state.filter_values[target]
+            else: self._state.filter_values[target] = value
                 
         elif action == 'order':
             if not target in self._state.ordering: self._state.ordering[target] = {}
@@ -205,13 +200,15 @@ class DataSet(QuerySet):
         return chain
     
     def filter_data(self):
+        print self._state.filter_values
         filter_args = {}
         for filter_field, selection in self._state.filter_values.iteritems():
-            if filter_field in [f for f in self.filters] and not selection is None:
+            if filter_field in [f for f in self.filters] and not selection is None and selection:
                 if isinstance(selection, list):
                     filter_args[filter_field+"__in"]=selection
                 else:
                     filter_args[filter_field]=selection
+        print filter_args
         return self.filter(**filter_args) if filter_args else self
         
     def search(self):

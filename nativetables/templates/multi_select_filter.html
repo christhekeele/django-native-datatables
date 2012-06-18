@@ -1,6 +1,8 @@
-<select multiple data-table-select-filter="{{name}}">
-  <option value>Filter by {{label}}</a>
-  {% for id, title in choices.iteritems %}
-    <option value="{{id}}">{{title}}</option>
-  {% endfor %}
-</select>
+<div class="input-append">
+	<select multiple="multiple" data-table-multi-select-filter="{{name}}" data-placeholder="Filter by...">
+	  {% for id, title in choices.iteritems %}
+	    <option value="{{id}}">{{title}}</option>
+	  {% endfor %}
+	</select>
+	<span class="add-on"><i class="icon-filter"></i></span>
+</div> <!-- /input-prepend -->

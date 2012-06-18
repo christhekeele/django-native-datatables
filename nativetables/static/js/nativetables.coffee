@@ -12,7 +12,16 @@ $(document).ready ->
     
     for multi_filter in $datatable.find(':data("table-multi-filter")')
       $(multi_filter).find(':data("filter")').live 'click', ->
-        update_table table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), $(this).data('filter')
+        value_array=$.map($(this).parent().find(".active:data('filter')"), (filter)->$(filter).data('filter') )
+        if $(this).data('filter') in value_array
+          value_array.pop($(this).data('filter'))
+        else
+          value_array.push($(this).data('filter'))
+        update_table table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), value_array
+        
+    for multi_select_filter in $datatable.find('select:data("table-multi-select-filter")')
+      $(multi_select_filter).live 'change', ->
+        update_table table_name, 'multi_filter', $(this).data('table-multi-select-filter'), $(this).val()
     
     $datatable.find(':data("table-search")').live 'keyup', ->
       update_table table_name, 'search', $(this).data('table-search'), $(this).val()
