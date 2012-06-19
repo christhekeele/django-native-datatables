@@ -19,6 +19,10 @@ $(document).ready ->
           value_array.push($(this).data('filter'))
         update_table table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), value_array
         
+    for single_select_filter in $datatable.find('select:data("table-select-filter")')
+      $(single_select_filter).live 'change', ->
+        update_table table_name, 'single_filter', $(this).data('table-select-filter'), $(this).val()
+        
     for multi_select_filter in $datatable.find('select:data("table-multi-select-filter")')
       $(multi_select_filter).live 'change', ->
         update_table table_name, 'multi_filter', $(this).data('table-multi-select-filter'), $(this).val()

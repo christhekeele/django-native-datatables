@@ -3,7 +3,7 @@
   var __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   $(document).ready(function() {
-    var $datatable, changes, datatable, multi_filter, multi_select_filter, paginate, single_filter, table_name, tables, update_table, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3;
+    var $datatable, changes, datatable, multi_filter, multi_select_filter, paginate, single_filter, single_select_filter, table_name, tables, update_table, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2, _ref3, _ref4;
     tables = $('div:data("table")');
     changes = {};
     for (_i = 0, _len = tables.length; _i < _len; _i++) {
@@ -34,9 +34,16 @@
           return update_table(table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), value_array);
         });
       }
-      _ref2 = $datatable.find('select:data("table-multi-select-filter")');
+      _ref2 = $datatable.find('select:data("table-select-filter")');
       for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {
-        multi_select_filter = _ref2[_l];
+        single_select_filter = _ref2[_l];
+        $(single_select_filter).live('change', function() {
+          return update_table(table_name, 'single_filter', $(this).data('table-select-filter'), $(this).val());
+        });
+      }
+      _ref3 = $datatable.find('select:data("table-multi-select-filter")');
+      for (_m = 0, _len4 = _ref3.length; _m < _len4; _m++) {
+        multi_select_filter = _ref3[_m];
         $(multi_select_filter).live('change', function() {
           return update_table(table_name, 'multi_filter', $(this).data('table-multi-select-filter'), $(this).val());
         });
@@ -57,9 +64,9 @@
         order = $(this).hasClass('asc') ? "asc" : "desc";
         return update_table(table_name, 'order', $(this).data('table-order'), order);
       });
-      _ref3 = $datatable.find(':data("table-paginate")');
-      for (_m = 0, _len4 = _ref3.length; _m < _len4; _m++) {
-        paginate = _ref3[_m];
+      _ref4 = $datatable.find(':data("table-paginate")');
+      for (_n = 0, _len5 = _ref4.length; _n < _len5; _n++) {
+        paginate = _ref4[_n];
         $(paginate).find(':data("per_page")').live('click', function() {
           return update_table(table_name, 'per_page', false, $(this).data('per_page'));
         });
@@ -69,16 +76,16 @@
       }
     }
     return update_table = function(table_name, action, target, value) {
-      var _ref4, _ref5, _ref6;
+      var _ref5, _ref6, _ref7;
       console.log(table_name, action, target, value);
-      if ((_ref4 = changes[table_name]) != null) {
-        _ref4['action'] = action;
-      }
       if ((_ref5 = changes[table_name]) != null) {
-        _ref5['target'] = target;
+        _ref5['action'] = action;
       }
       if ((_ref6 = changes[table_name]) != null) {
-        _ref6['value'] = value;
+        _ref6['target'] = target;
+      }
+      if ((_ref7 = changes[table_name]) != null) {
+        _ref7['value'] = value;
       }
       return $.ajax({
         url: "",

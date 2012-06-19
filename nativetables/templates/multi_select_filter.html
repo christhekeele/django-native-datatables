@@ -1,5 +1,5 @@
 <div class="input-append">
-	<select multiple="multiple" data-table-multi-select-filter="{{name}}" data-placeholder="Filter by...">
+	<select multiple="multiple" data-table-multi-select-filter="{{name}}" data-placeholder="Filter by {{label}}...">
 	  {% for id, title in choices.iteritems %}
 	    <option value="{{id}}">{{title}}</option>
 	  {% endfor %}
