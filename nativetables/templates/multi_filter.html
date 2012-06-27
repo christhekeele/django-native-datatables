@@ -1,6 +1,13 @@
-<div class="btn-group" data-toggle="buttons" data-table-multi-filter="{{name}}">
+<li class="dropdown swiggle feature">
   {% for id, title in choices.iteritems %}
-    <a title="Sort by {{title}}" class="btn btn-small" data-filter={{id}}>{{title}}</a>
+    <a href="#" id="{{id}}" class="btn btn-mini heads-up">{{title}} <strong>&times;</strong></a>
   {% endfor %}
-  <a title="Sort by {{label}}" data-filter-header class="btn btn-primary btn-small">{{label}}</a>
-</div>
+  <a href="#" class="dropdown-toggle btn btn-mini swiggle-title" data-toggle="dropdown">{{label}} <span class="caret"></span></a>
+  <ul class="dropdown-menu all-swiggles" data-table-multi-filter="{{name}}">
+    {% for id, title in choices.iteritems %}
+      <li><a href="#" data-filter={{id}}>{{title}}</a></li>
+    {% endfor %}
+    <li class="divider"></li>
+    <li><a href="#" data-filter-clear="{{name}}">Clear filter</a></li>
+  </ul>
+</li>

@@ -15,23 +15,34 @@
       for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
         single_filter = _ref[_j];
         $(single_filter).find(':data("filter")').live('click', function() {
-          return update_table(table_name, 'single_filter', $(this).parent().data('table-single-filter'), $(this).data('filter') || null);
+          var $filter;
+          $filter = $(this).closest(':data("table-single-filter")');
+          if ($filter.data('selected') !== $(this).data('filter')) {
+            $filter.data('selected', $(this).data('filter'));
+          } else {
+            $filter.data('selected', null);
+          }
+          return update_table(table_name, 'single_filter', $filter.data('table-single-filter'), $filter.data('selected'));
         });
       }
       _ref1 = $datatable.find(':data("table-multi-filter")');
       for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
         multi_filter = _ref1[_k];
         $(multi_filter).find(':data("filter")').live('click', function() {
-          var value_array, _ref2;
-          value_array = $.map($(this).parent().find(".active:data('filter')"), function(filter) {
-            return $(filter).data('filter');
-          });
+          var $filter, index, value, value_array, _l, _len3, _ref2;
+          $filter = $(this).closest(':data("table-multi-filter")');
+          value_array = $filter.data('selected') ? $filter.data('selected').split(",") : [];
+          for (index = _l = 0, _len3 = value_array.length; _l < _len3; index = ++_l) {
+            value = value_array[index];
+            value_array[index] = parseInt(value);
+          }
           if (_ref2 = $(this).data('filter'), __indexOf.call(value_array, _ref2) >= 0) {
             value_array.pop($(this).data('filter'));
           } else {
             value_array.push($(this).data('filter'));
           }
-          return update_table(table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), value_array);
+          $filter.data('selected', value_array.join());
+          return update_table(table_name, 'multi_filter', $filter.data('table-multi-filter'), value_array);
         });
       }
       _ref2 = $datatable.find('select:data("table-select-filter")');

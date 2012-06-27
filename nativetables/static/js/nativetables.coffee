@@ -8,16 +8,25 @@ $(document).ready ->
         
     for single_filter in $datatable.find(':data("table-single-filter")')
       $(single_filter).find(':data("filter")').live 'click', ->
-        update_table table_name, 'single_filter', $(this).parent().data('table-single-filter'), $(this).data('filter') or null
+        $filter=$(this).closest(':data("table-single-filter")')
+        if $filter.data('selected') != $(this).data('filter')
+          $filter.data('selected', $(this).data('filter'))
+        else
+          $filter.data('selected', null)
+        update_table table_name, 'single_filter', $filter.data('table-single-filter'), $filter.data('selected')
     
     for multi_filter in $datatable.find(':data("table-multi-filter")')
       $(multi_filter).find(':data("filter")').live 'click', ->
-        value_array=$.map($(this).parent().find(".active:data('filter')"), (filter)->$(filter).data('filter') )
-        if $(this).data('filter') in value_array
-          value_array.pop($(this).data('filter'))
+        $filter=$(this).closest(':data("table-multi-filter")')
+        value_array = if $filter.data('selected') then $filter.data('selected').split(",") else []
+        # for value, index in value_array
+        #   value_array[index] = parseInt(value)
+        if toString($(this).data('filter')) in value_array
+          value_array.pop(toString($(this).data('filter')))
         else
-          value_array.push($(this).data('filter'))
-        update_table table_name, 'multi_filter', $(this).parent().data('table-multi-filter'), value_array
+          value_array.push(toString($(this).data('filter')))
+        $filter.data('selected', value_array.join())
+        update_table table_name, 'multi_filter', $filter.data('table-multi-filter'), value_array
         
     for single_select_filter in $datatable.find('select:data("table-select-filter")')
       $(single_select_filter).live 'change', ->
