@@ -203,7 +203,7 @@ class DataSet(QuerySet):
         print self._state.filter_values
         filter_args = {}
         for filter_field, selection in self._state.filter_values.iteritems():
-            if filter_field in [f for f in self.filters] and not selection is None and selection:
+            if filter_field in [f for f in self.filters] and not selection is None:
                 if isinstance(selection, list):
                     filter_args[filter_field+"__in"]=selection
                 else:

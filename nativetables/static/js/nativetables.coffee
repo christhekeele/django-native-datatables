@@ -18,13 +18,12 @@ $(document).ready ->
     for multi_filter in $datatable.find(':data("table-multi-filter")')
       $(multi_filter).find(':data("filter")').live 'click', ->
         $filter=$(this).closest(':data("table-multi-filter")')
-        value_array = if $filter.data('selected') then $filter.data('selected').split(",") else []
-        # for value, index in value_array
-        #   value_array[index] = parseInt(value)
-        if toString($(this).data('filter')) in value_array
-          value_array.pop(toString($(this).data('filter')))
+        value_array = if $filter.data('selected') then $filter.data('selected').split(",") else new Array()
+        index = value_array.indexOf($(this).data('filter').toString())
+        if index != -1
+          value_array.splice( index, 1 )
         else
-          value_array.push(toString($(this).data('filter')))
+          value_array.push($(this).data('filter').toString())
         $filter.data('selected', value_array.join())
         update_table table_name, 'multi_filter', $filter.data('table-multi-filter'), value_array
         

@@ -1,6 +1,11 @@
-<div class="btn-group" data-toggle="buttons-radio" data-table-single-filter="{{name}}">
-  <a title="Show All" class="btn btn-small" data-filter>All</a>
-  <a title="Sort by {{true_label}}" class="btn btn-small" data-filter="True">{{true_label}}</a>
-  <a title="Sort by {{false_label}}" class="btn btn-small" data-filter="False">{{false_label}}</a>
-  <a title="Sort by {{label}}" data-filter-header class="btn btn-primary btn-small radio-exception">{{label}}</a>
-</div>
+<li class="dropdown swiggle feature">
+  <a href="#" id="True" class="btn btn-mini heads-up">{{true_label}} <strong>&times;</strong></a>
+  <a href="#" id="False" class="btn btn-mini heads-up">{{false_label}} <strong>&times;</strong></a>
+  <a href="#" class="dropdown-toggle btn btn-mini swiggle-title" data-toggle="dropdown">{{label}} <span class="caret"></span></a>
+  <ul class="dropdown-menu all-swiggles" data-table-single-filter="{{name}}">
+    <li><a href="#" data-filter="True">{{true_label}}</a></li>
+    <li><a href="#" data-filter="False">{{false_label}}</a></li>
+    <li class="divider"></li>
+    <li><a href="#" data-filter-clear="{{name}}">Clear filter</a></li>
+  </ul>
+</li>
